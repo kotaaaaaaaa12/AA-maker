@@ -7,11 +7,29 @@
 </head>
 <body>
   <h1>AA Maker</h1>
+
   <input type="file" id="upload" accept="image/*" />
+
   <label for="size">1辺の文字数:</label>
   <input type="number" id="size" value="50" min="10" max="200" />
-  <pre id="ascii-art"></pre>
 
+  <br>
+
+  <label for="charset">使う文字:</label>
+  <select id="charset">
+    <option value="dots">点（例：⣿⣷⣯⣟…）</option>
+    <option value="numbers">数字（0-9）</option>
+    <option value="alpha">アルファベット（A-Z）</option>
+    <option value="kana">カタカナ（アイウ…）</option>
+    <option value="hiragana">ひらがな（あいう…）</option>
+    <option value="kanji">漢字（日月火水…）</option>
+  </select>
+
+  <br>
+
+  <button id="convert">変換する！</button>
+
+  <pre id="ascii-art"></pre>
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script src="main.js"></script>
