@@ -13,7 +13,7 @@ const ctx = canvas.getContext('2d');
 let loadedImage = null;
 
 const charsetMap = {
-  dots: "⣿⣷⣯⣟⡿⠿⠛⠉⠀",
+  dots: "⣿⠿⠾⠽⠼⠻⠺⠹⠸⠷⠶⠵⠴⠳⠲⠱⠰⠯⠮⠭⠬⠫⠪⠩⠨⠧⠦⠥⠤⠣⠢⠡⠠⠟⠞⠝⠜⠛⠚⠙⠘⠗⠖⠕⠔⠓⠒⠑⠐⠏⠎⠍⠌⠋⠊⠉⠈⠇⠆⠅⠄⠃⠂⠁⠀",
   numbers: "0123456789",
   alpha_upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
   alpha_lower: "abcdefghijklmnopqrstuvwxyz",
@@ -40,11 +40,13 @@ upload.addEventListener('change', () => {
 });
 
 charsetSelect.addEventListener('change', () => {
-  if (charsetSelect.value === 'custom') {
-    customCharsInput.style.display = 'inline-block';
-  } else {
-    customCharsInput.style.display = 'none';
-  }
+  customCharsInput.style.display = charsetSelect.value === 'custom' ? 'inline-block' : 'none';
+});
+
+document.querySelectorAll('input[name="scaleMode"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    heightInput.disabled = document.querySelector('input[name="scaleMode"]:checked').value === 'aspect';
+  });
 });
 
 convertBtn.addEventListener('click', () => {
@@ -53,37 +55,25 @@ convertBtn.addEventListener('click', () => {
     return;
   }
 
-  let inputWidth = parseInt(widthInput.value);
-  let inputHeight = parseInt(heightInput.value);
-
-  if (!inputWidth && !inputHeight) {
-    alert("横幅か縦幅のどちらかは必ず指定してください！");
-    return;
-  }
+  const scaleMode = document.querySelector('input[name="scaleMode"]:checked').value;
+  const inputWidth = parseInt(widthInput.value);
+  const inputHeight = parseInt(heightInput.value);
 
   const imgAspect = loadedImage.width / loadedImage.height;
 
   let finalWidth, finalHeight;
-  if (inputWidth && inputHeight) {
-    finalWidth = inputWidth;
-    finalHeight = inputHeight;
-  } else if (inputWidth) {
+  if (scaleMode === "aspect") {
     finalWidth = inputWidth;
     finalHeight = Math.round(inputWidth / imgAspect);
-  } else if (inputHeight) {
+  } else {
+    finalWidth = inputWidth;
     finalHeight = inputHeight;
-    finalWidth = Math.round(inputHeight * imgAspect);
   }
 
-  let charset = '';
-  if (charsetSelect.value === 'custom') {
-    charset = customCharsInput.value.trim();
-    if (!charset) {
-      alert('オリジナル文字セットを入力してください！');
-      return;
-    }
-  } else {
-    charset = charsetMap[charsetSelect.value];
+  let charset = charsetSelect.value === 'custom' ? customCharsInput.value.trim() : charsetMap[charsetSelect.value];
+  if (!charset || charset.length === 0) {
+    alert('文字セットが無効です');
+    return;
   }
 
   canvas.width = finalWidth;
@@ -92,18 +82,13 @@ convertBtn.addEventListener('click', () => {
   ctx.clearRect(0, 0, finalWidth, finalHeight);
   ctx.drawImage(loadedImage, 0, 0, finalWidth, finalHeight);
 
-  const imgData = ctx.getImageData(0, 0, finalWidth, finalHeight);
-  const data = imgData.data;
+  const imgData = ctx.getImageData(0, 0, finalWidth, finalHeight).data;
 
   let result = '';
   for (let y = 0; y < finalHeight; y++) {
     for (let x = 0; x < finalWidth; x++) {
       const i = (y * finalWidth + x) * 4;
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const brightness = (r + g + b) / 3;
-
+      const brightness = (imgData[i] + imgData[i + 1] + imgData[i + 2]) / 3;
       const index = Math.floor((brightness / 255) * (charset.length - 1));
       result += charset[index];
     }
@@ -114,20 +99,14 @@ convertBtn.addEventListener('click', () => {
 });
 
 copyBtn.addEventListener('click', () => {
-  if (!asciiArt.textContent.trim()) {
-    alert('変換結果がありません！');
-    return;
-  }
+  if (!asciiArt.textContent.trim()) return;
   navigator.clipboard.writeText(asciiArt.textContent)
     .then(() => alert('コピーしました！'))
-    .catch(() => alert('コピーに失敗しました。'));
+    .catch(() => alert('コピー失敗'));
 });
 
 downloadBtn.addEventListener('click', () => {
-  if (!asciiArt.textContent.trim()) {
-    alert('変換結果がありません！');
-    return;
-  }
+  if (!asciiArt.textContent.trim()) return;
   const blob = new Blob([asciiArt.textContent], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
