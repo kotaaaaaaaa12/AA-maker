@@ -12,17 +12,17 @@ const ctx = canvas.getContext('2d');
 
 let loadedImage = null;
 
-// 文字セットの定義
 const charsetMap = {
   dots: "⣿⣷⣯⣟⡿⠿⠛⠉⠀",
   numbers: "0123456789",
-  alpha: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  alpha_upper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  alpha_lower: "abcdefghijklmnopqrstuvwxyz",
+  alpha_both: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
   kana: "アイウエオカキクケコサシスセソ",
   hiragana: "あいうえおかきくけこさしすせそ",
   kanji: "日月火水木金土山川田人力口"
 };
 
-// アップロードされた画像を読み込むだけ（変換はボタンで）
 upload.addEventListener('change', () => {
   const file = upload.files[0];
   if (!file) return;
@@ -39,7 +39,6 @@ upload.addEventListener('change', () => {
   reader.readAsDataURL(file);
 });
 
-// オリジナル文字セットの入力表示制御
 charsetSelect.addEventListener('change', () => {
   if (charsetSelect.value === 'custom') {
     customCharsInput.style.display = 'inline-block';
@@ -48,15 +47,33 @@ charsetSelect.addEventListener('change', () => {
   }
 });
 
-// 変換処理
 convertBtn.addEventListener('click', () => {
   if (!loadedImage) {
     alert("画像をアップロードしてください！");
     return;
   }
 
-  const width = parseInt(widthInput.value);
-  const height = parseInt(heightInput.value);
+  let inputWidth = parseInt(widthInput.value);
+  let inputHeight = parseInt(heightInput.value);
+
+  if (!inputWidth && !inputHeight) {
+    alert("横幅か縦幅のどちらかは必ず指定してください！");
+    return;
+  }
+
+  const imgAspect = loadedImage.width / loadedImage.height;
+
+  let finalWidth, finalHeight;
+  if (inputWidth && inputHeight) {
+    finalWidth = inputWidth;
+    finalHeight = inputHeight;
+  } else if (inputWidth) {
+    finalWidth = inputWidth;
+    finalHeight = Math.round(inputWidth / imgAspect);
+  } else if (inputHeight) {
+    finalHeight = inputHeight;
+    finalWidth = Math.round(inputHeight * imgAspect);
+  }
 
   let charset = '';
   if (charsetSelect.value === 'custom') {
@@ -69,26 +86,24 @@ convertBtn.addEventListener('click', () => {
     charset = charsetMap[charsetSelect.value];
   }
 
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = finalWidth;
+  canvas.height = finalHeight;
 
-  // キャンバスにリサイズして描画
-  ctx.clearRect(0, 0, width, height);
-  ctx.drawImage(loadedImage, 0, 0, width, height);
+  ctx.clearRect(0, 0, finalWidth, finalHeight);
+  ctx.drawImage(loadedImage, 0, 0, finalWidth, finalHeight);
 
-  const imgData = ctx.getImageData(0, 0, width, height);
+  const imgData = ctx.getImageData(0, 0, finalWidth, finalHeight);
   const data = imgData.data;
 
   let result = '';
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4;
+  for (let y = 0; y < finalHeight; y++) {
+    for (let x = 0; x < finalWidth; x++) {
+      const i = (y * finalWidth + x) * 4;
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
       const brightness = (r + g + b) / 3;
 
-      // 明るさに応じて文字セットの中から選ぶ（明るいほど後ろの文字）
       const index = Math.floor((brightness / 255) * (charset.length - 1));
       result += charset[index];
     }
@@ -98,7 +113,6 @@ convertBtn.addEventListener('click', () => {
   asciiArt.textContent = result;
 });
 
-// コピー機能
 copyBtn.addEventListener('click', () => {
   if (!asciiArt.textContent.trim()) {
     alert('変換結果がありません！');
@@ -106,10 +120,9 @@ copyBtn.addEventListener('click', () => {
   }
   navigator.clipboard.writeText(asciiArt.textContent)
     .then(() => alert('コピーしました！'))
-    .catch(() => alert('コピーに失敗しました…'));
+    .catch(() => alert('コピーに失敗しました。'));
 });
 
-// ダウンロード機能
 downloadBtn.addEventListener('click', () => {
   if (!asciiArt.textContent.trim()) {
     alert('変換結果がありません！');
@@ -119,7 +132,7 @@ downloadBtn.addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'aa_maker.txt';
+  a.download = 'aa.txt';
   a.click();
   URL.revokeObjectURL(url);
 });
