@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>AA Maker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>AA Maker</h1>
+  <input type="file" id="upload" accept="image/*" />
+  <label for="size">1辺の文字数:</label>
+  <input type="number" id="size" value="50" min="10" max="200" />
+  <pre id="ascii-art"></pre>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script src="main.js"></script>
+</body>
+</html>
