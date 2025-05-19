@@ -8,26 +8,33 @@
 <body>
   <h1>AA Maker</h1>
 
-  <input type="file" id="upload" accept="image/*" />
+  <div class="controls">
+    <label for="upload" class="btn">画像をアップロード</label>
+    <input type="file" id="upload" accept="image/*" hidden />
 
-  <label for="size">1辺の文字数:</label>
-  <input type="number" id="size" value="50" min="10" max="200" />
+    <label for="width">横幅 (文字数):</label>
+    <input type="number" id="width" value="50" min="10" max="200" />
 
-  <br>
+    <label for="height">縦幅 (文字数):</label>
+    <input type="number" id="height" value="50" min="10" max="200" />
 
-  <label for="charset">使う文字:</label>
-  <select id="charset">
-    <option value="dots">点（例：⣿⣷⣯⣟…）</option>
-    <option value="numbers">数字（0-9）</option>
-    <option value="alpha">アルファベット（A-Z）</option>
-    <option value="kana">カタカナ（アイウ…）</option>
-    <option value="hiragana">ひらがな（あいう…）</option>
-    <option value="kanji">漢字（日月火水…）</option>
-  </select>
+    <label for="charset">使う文字セット:</label>
+    <select id="charset">
+      <option value="dots">点（⣿⣷⣯⣟⡿⠿⠛⠉⠀）</option>
+      <option value="numbers">数字（0-9）</option>
+      <option value="alpha">アルファベット（A-Z）</option>
+      <option value="kana">カタカナ（アイウエオ…）</option>
+      <option value="hiragana">ひらがな（あいうえお…）</option>
+      <option value="kanji">漢字（日月火水…）</option>
+      <option value="custom">オリジナル文字セット</option>
+    </select>
 
-  <br>
+    <input type="text" id="customChars" placeholder="ここにオリジナル文字を入力" style="display:none;" />
 
-  <button id="convert">変換する！</button>
+    <button id="convert">変換する！</button>
+    <button id="copy">コピー</button>
+    <button id="download">ダウンロード</button>
+  </div>
 
   <pre id="ascii-art"></pre>
   <canvas id="canvas" style="display:none;"></canvas>
