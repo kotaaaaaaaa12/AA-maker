@@ -1,5 +1,5 @@
 body {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Courier New', monospace;
   background: linear-gradient(135deg, #7F7FD5, #86A8E7, #91EAE4);
   color: #222;
   padding: 20px;
@@ -8,40 +8,35 @@ body {
 
 h1 {
   margin-bottom: 20px;
-  font-weight: 900;
+  font-weight: bold;
   font-size: 3em;
   color: #fff;
   text-shadow: 2px 2px 8px #0008;
 }
 
 .controls {
-  background: #fff9;
+  background: #ffffffdd;
   border-radius: 10px;
   padding: 15px;
   display: inline-block;
   box-shadow: 0 0 15px rgba(0,0,0,0.15);
   margin-bottom: 20px;
   user-select: none;
+  text-align: left;
 }
 
 label {
-  margin: 0 10px 0 0;
-  font-weight: 600;
+  margin-right: 10px;
 }
 
 input[type="number"],
-select,
-input[type="text"] {
+input[type="text"],
+select {
   font-size: 1em;
-  padding: 5px 8px;
-  margin: 0 15px 10px 0;
+  padding: 5px;
+  margin: 5px;
   border-radius: 5px;
   border: 1px solid #ccc;
-  outline-offset: 2px;
-}
-
-input[type="text"] {
-  width: 250px;
 }
 
 button, .btn {
@@ -51,18 +46,16 @@ button, .btn {
   color: white;
   border-radius: 7px;
   cursor: pointer;
-  font-weight: 700;
-  margin: 0 10px 10px 0;
-  transition: background-color 0.3s ease;
-  user-select: none;
+  font-weight: bold;
+  margin: 5px;
 }
 
 button:hover, .btn:hover {
-  background: #4154d1;
+  background: #3d4ec9;
 }
 
 pre#ascii-art {
-  background: #222a40;
+  background: #1c1c2c;
   color: #d0d6ff;
   padding: 20px;
   font-size: 7px;
