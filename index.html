@@ -3,48 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta
-    name="description"
-    content="Convert images into ASCII art directly in your browser."
-  />
-  <title>AA Maker — Image to ASCII Art</title>
+  <meta id="metaDescription" name="description" content="Convert images into ASCII art in your browser." />
+  <title>AA Maker</title>
   <link rel="stylesheet" href="style.css" />
   <script src="main.js" defer></script>
 </head>
 <body>
   <div class="app-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">IMAGE → ASCII</p>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">AA</span>
         <h1>AA Maker</h1>
-        <p class="hero-copy">Turn any image into text art without uploading it anywhere.</p>
       </div>
-      <div class="privacy-pill" aria-label="Images are processed locally">
-        <span class="privacy-dot" aria-hidden="true"></span>
-        Local processing
-      </div>
+
+      <label class="language-control" for="language">
+        <span class="sr-only" data-i18n="language">Language</span>
+        <select id="language" aria-label="Language">
+          <option value="auto">Auto</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+      </label>
     </header>
 
     <main class="workspace">
       <form id="controls" class="panel controls-panel">
-        <section class="control-section" aria-labelledby="source-title">
-          <div class="section-heading">
-            <span class="step-number">01</span>
-            <div>
-              <h2 id="source-title">Source image</h2>
-              <p>Choose a file or drop it here.</p>
-            </div>
-          </div>
+        <section class="control-section">
+          <h2 data-i18n="image">Image</h2>
 
           <label id="dropZone" class="drop-zone" for="upload" tabindex="0">
             <input id="upload" type="file" accept="image/*" hidden />
-            <span class="upload-icon" aria-hidden="true">↥</span>
-            <span class="drop-title">Drop an image here</span>
-            <span class="drop-copy">or click to browse</span>
+            <span class="upload-mark" aria-hidden="true">+</span>
+            <strong data-i18n="chooseImage">Choose image</strong>
+            <span data-i18n="dropImage">or drop here</span>
           </label>
 
           <div id="previewFrame" class="preview-card is-hidden">
-            <img id="imagePreview" alt="Selected source preview" />
+            <img id="imagePreview" alt="" />
             <div class="preview-info">
               <strong id="imageName"></strong>
               <span id="imageMeta"></span>
@@ -52,125 +47,90 @@
           </div>
         </section>
 
-        <section class="control-section" aria-labelledby="size-title">
-          <div class="section-heading">
-            <span class="step-number">02</span>
-            <div>
-              <h2 id="size-title">Output size</h2>
-              <p>Set the character grid dimensions.</p>
-            </div>
-          </div>
+        <section class="control-section">
+          <h2 data-i18n="size">Size</h2>
 
-          <div class="mode-switch" role="radiogroup" aria-label="Scale mode">
+          <div class="mode-switch" role="radiogroup" data-i18n-aria-label="scaleMode">
             <label class="mode-option">
               <input type="radio" name="scaleMode" value="aspect" checked />
-              <span>Keep ratio</span>
+              <span data-i18n="autoRatio">Auto ratio</span>
             </label>
             <label class="mode-option">
               <input type="radio" name="scaleMode" value="custom" />
-              <span>Custom</span>
+              <span data-i18n="custom">Custom</span>
             </label>
           </div>
 
           <div class="field-grid">
             <label class="field" for="width">
-              <span>Width</span>
-              <div class="input-shell">
-                <input id="width" type="number" value="50" min="4" max="1000" inputmode="numeric" />
-                <span>chars</span>
-              </div>
+              <span data-i18n="width">Width</span>
+              <input id="width" type="number" value="50" min="4" max="1000" inputmode="numeric" />
             </label>
 
             <label class="field" for="height">
-              <span>Height</span>
-              <div class="input-shell">
-                <input id="height" type="number" value="50" min="1" max="1000" inputmode="numeric" disabled />
-                <span>rows</span>
-              </div>
+              <span data-i18n="height">Height</span>
+              <input id="height" type="number" value="50" min="1" max="1000" inputmode="numeric" disabled />
             </label>
           </div>
-          <p class="field-hint">Maximum 1,000 per side and 500,000 output characters.</p>
         </section>
 
-        <section class="control-section" aria-labelledby="characters-title">
-          <div class="section-heading">
-            <span class="step-number">03</span>
-            <div>
-              <h2 id="characters-title">Character set</h2>
-              <p>Choose how brightness is represented.</p>
-            </div>
-          </div>
+        <section class="control-section">
+          <h2 data-i18n="characters">Characters</h2>
 
           <label class="field" for="charset">
-            <span>Preset</span>
             <select id="charset">
-              <option value="dots">Braille blocks</option>
-              <option value="numbers">Numbers 0–9</option>
-              <optgroup label="Alphabet">
-                <option value="alpha_upper">Uppercase</option>
-                <option value="alpha_lower">Lowercase</option>
-                <option value="alpha_both">Uppercase + lowercase</option>
-              </optgroup>
-              <option value="kana">Katakana</option>
-              <option value="hiragana">Hiragana</option>
-              <option value="kanji">Kanji</option>
-              <option value="custom">Custom characters</option>
+              <option value="dots" data-i18n="charsetDots">Braille</option>
+              <option value="numbers" data-i18n="charsetNumbers">Numbers</option>
+              <option value="alpha_upper" data-i18n="charsetUpper">A-Z</option>
+              <option value="alpha_lower" data-i18n="charsetLower">a-z</option>
+              <option value="alpha_both" data-i18n="charsetBoth">A-Z + a-z</option>
+              <option value="kana" data-i18n="charsetKatakana">Katakana</option>
+              <option value="hiragana" data-i18n="charsetHiragana">Hiragana</option>
+              <option value="kanji" data-i18n="charsetKanji">Kanji</option>
+              <option value="custom" data-i18n="charsetCustom">Custom</option>
             </select>
           </label>
 
           <label id="customCharsField" class="field is-hidden" for="customChars">
-            <span>Custom characters</span>
-            <input
-              id="customChars"
-              type="text"
-              autocomplete="off"
-              placeholder="Dark → light characters"
-            />
+            <span data-i18n="customCharacters">Custom characters</span>
+            <input id="customChars" type="text" autocomplete="off" data-i18n-placeholder="customPlaceholder" />
           </label>
         </section>
 
         <div class="form-actions">
-          <button id="convert" class="button button-primary" type="submit" disabled>
-            Convert image
+          <button id="convert" class="button button-primary" type="submit" disabled data-i18n="convert">
+            Convert
           </button>
-          <button id="clear" class="button button-ghost" type="button" disabled>
+          <button id="clear" class="button button-ghost" type="button" disabled data-i18n="clear">
             Clear
           </button>
         </div>
       </form>
 
-      <section class="panel output-panel" aria-labelledby="output-title">
+      <section class="panel output-panel">
         <header class="output-header">
-          <div>
-            <p class="eyebrow">OUTPUT</p>
-            <h2 id="output-title">ASCII art</h2>
-          </div>
-          <span id="outputMeta" class="output-meta">Waiting for an image</span>
+          <h2 data-i18n="output">Output</h2>
+          <span id="outputMeta" class="output-meta" data-i18n="waiting">No image</span>
         </header>
 
         <div class="output-toolbar">
-          <button id="copy" class="button button-ghost button-small" type="button" disabled>
+          <button id="copy" class="button button-ghost button-small" type="button" disabled data-i18n="copy">
             Copy
           </button>
-          <button id="download" class="button button-ghost button-small" type="button" disabled>
-            Download .txt
+          <button id="download" class="button button-ghost button-small" type="button" disabled data-i18n="download">
+            Download
           </button>
         </div>
 
         <div class="output-stage">
           <div id="emptyState" class="empty-state">
             <span class="empty-mark" aria-hidden="true">Aa</span>
-            <strong>Your ASCII art will appear here.</strong>
-            <span>Select an image, adjust the settings, then convert it.</span>
+            <strong data-i18n="empty">Choose an image to start.</strong>
           </div>
           <pre id="ascii-art" class="is-hidden" tabindex="0"></pre>
         </div>
       </section>
     </main>
-
-    <footer class="footer">
-      Everything runs locally in your browser. Your image is never uploaded by this page.
-    </footer>
   </div>
 
   <canvas id="canvas" hidden></canvas>

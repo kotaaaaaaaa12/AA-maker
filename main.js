@@ -2,7 +2,7 @@
 
 const MAX_DIMENSION = 1000;
 const MAX_OUTPUT_PIXELS = 500000;
-const numberFormatter = new Intl.NumberFormat('en-US');
+const LANGUAGE_STORAGE_KEY = 'aa-maker-language';
 
 const elements = Object.freeze({
   controls: document.getElementById('controls'),
@@ -25,7 +25,9 @@ const elements = Object.freeze({
   emptyState: document.getElementById('emptyState'),
   asciiArt: document.getElementById('ascii-art'),
   canvas: document.getElementById('canvas'),
-  toast: document.getElementById('toast')
+  toast: document.getElementById('toast'),
+  language: document.getElementById('language'),
+  metaDescription: document.getElementById('metaDescription')
 });
 
 const context = elements.canvas.getContext('2d', { willReadFrequently: true });
@@ -42,13 +44,194 @@ const CHARSETS = Object.freeze({
   kanji: '日月火水木金土山川田人力口'
 });
 
+const MESSAGES = Object.freeze({
+  en: {
+    title: 'AA Maker',
+    description: 'Convert images into ASCII art in your browser.',
+    language: 'Language',
+    image: 'Image',
+    chooseImage: 'Choose image',
+    dropImage: 'or drop here',
+    size: 'Size',
+    scaleMode: 'Scale mode',
+    autoRatio: 'Auto ratio',
+    custom: 'Custom',
+    width: 'Width',
+    height: 'Height',
+    characters: 'Characters',
+    charsetDots: 'Braille',
+    charsetNumbers: 'Numbers',
+    charsetUpper: 'A-Z',
+    charsetLower: 'a-z',
+    charsetBoth: 'A-Z + a-z',
+    charsetKatakana: 'Katakana',
+    charsetHiragana: 'Hiragana',
+    charsetKanji: 'Kanji',
+    charsetCustom: 'Custom',
+    customCharacters: 'Custom characters',
+    customPlaceholder: 'Dark → light',
+    convert: 'Convert',
+    converting: 'Converting…',
+    clear: 'Clear',
+    output: 'Output',
+    waiting: 'No image',
+    ready: 'Ready',
+    copy: 'Copy',
+    download: 'Download',
+    empty: 'Choose an image to start.',
+    invalidImage: 'Choose a valid image.',
+    imageReady: 'Image ready.',
+    imageDecodeError: 'Could not read this image.',
+    chooseFirst: 'Choose an image first.',
+    widthRange: 'Width must be 4–{max}.',
+    heightRange: 'Height must be 1–{max}.',
+    outputTooLarge: 'Keep output under {max} characters.',
+    charsetTooShort: 'Use at least two characters.',
+    created: 'Created.',
+    conversionFailed: 'Conversion failed.',
+    conversionFailedHint: 'Conversion failed. Try a smaller size.',
+    copied: 'Copied.',
+    copyFailed: 'Copy failed.',
+    downloadStarted: 'Download started.',
+    outputMeta: '{width} × {height} · {count} chars'
+  },
+  ja: {
+    title: 'AA Maker',
+    description: '画像をブラウザ上でAAに変換します。',
+    language: '言語',
+    image: '画像',
+    chooseImage: '画像を選択',
+    dropImage: 'またはここにドロップ',
+    size: 'サイズ',
+    scaleMode: 'サイズ設定',
+    autoRatio: '比率を維持',
+    custom: '指定',
+    width: '幅',
+    height: '高さ',
+    characters: '文字',
+    charsetDots: '点字',
+    charsetNumbers: '数字',
+    charsetUpper: 'A-Z',
+    charsetLower: 'a-z',
+    charsetBoth: 'A-Z + a-z',
+    charsetKatakana: 'カタカナ',
+    charsetHiragana: 'ひらがな',
+    charsetKanji: '漢字',
+    charsetCustom: 'カスタム',
+    customCharacters: 'カスタム文字',
+    customPlaceholder: '暗 → 明',
+    convert: '変換',
+    converting: '変換中…',
+    clear: 'クリア',
+    output: '出力',
+    waiting: '画像なし',
+    ready: '準備完了',
+    copy: 'コピー',
+    download: '保存',
+    empty: '画像を選択して開始',
+    invalidImage: '画像ファイルを選んでください。',
+    imageReady: '画像を読み込みました。',
+    imageDecodeError: '画像を読み込めませんでした。',
+    chooseFirst: '先に画像を選んでください。',
+    widthRange: '幅は4〜{max}にしてください。',
+    heightRange: '高さは1〜{max}にしてください。',
+    outputTooLarge: '出力は{max}文字以内にしてください。',
+    charsetTooShort: '文字は2文字以上必要です。',
+    created: '変換しました。',
+    conversionFailed: '変換に失敗しました。',
+    conversionFailedHint: '変換に失敗しました。サイズを小さくしてください。',
+    copied: 'コピーしました。',
+    copyFailed: 'コピーに失敗しました。',
+    downloadStarted: '保存を開始しました。',
+    outputMeta: '{width} × {height} · {count}文字'
+  }
+});
+
 const state = {
   image: null,
   objectUrl: null,
   output: '',
+  outputDimensions: null,
   toastTimer: null,
-  loadVersion: 0
+  loadVersion: 0,
+  languageMode: 'auto',
+  locale: 'en',
+  isBusy: false
 };
+
+function detectLocale() {
+  const browserLanguage = navigator.languages?.[0] || navigator.language || 'en';
+  return browserLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+}
+
+function getLocaleForMode(mode) {
+  if (mode === 'ja') return 'ja';
+  if (mode === 'en') return 'en';
+  return detectLocale();
+}
+
+function t(key, replacements = {}) {
+  const template = MESSAGES[state.locale][key] ?? MESSAGES.en[key] ?? key;
+  return Object.entries(replacements).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+    template
+  );
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat(state.locale === 'ja' ? 'ja-JP' : 'en-US').format(value);
+}
+
+function updateDynamicText() {
+  if (state.isBusy) {
+    elements.convert.textContent = t('converting');
+    elements.outputMeta.textContent = t('converting');
+    return;
+  }
+
+  elements.convert.textContent = t('convert');
+
+  if (state.output && state.outputDimensions) {
+    const { width, height, pixelCount } = state.outputDimensions;
+    elements.outputMeta.textContent = t('outputMeta', {
+      width: formatNumber(width),
+      height: formatNumber(height),
+      count: formatNumber(pixelCount)
+    });
+    return;
+  }
+
+  elements.outputMeta.textContent = state.image ? t('ready') : t('waiting');
+}
+
+function applyLanguage(mode, { persist = true } = {}) {
+  state.languageMode = ['auto', 'en', 'ja'].includes(mode) ? mode : 'auto';
+  state.locale = getLocaleForMode(state.languageMode);
+  elements.language.value = state.languageMode;
+
+  if (persist) {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, state.languageMode);
+  }
+
+  document.documentElement.lang = state.locale;
+  document.title = t('title');
+  elements.metaDescription.content = t('description');
+  elements.language.setAttribute('aria-label', t('language'));
+
+  document.querySelectorAll('[data-i18n]').forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+
+  document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+    element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
+  });
+
+  updateDynamicText();
+}
 
 function getScaleMode() {
   return scaleModeInputs.find((input) => input.checked)?.value ?? 'aspect';
@@ -62,7 +245,7 @@ function showToast(message, type = 'info') {
 
   state.toastTimer = window.setTimeout(() => {
     elements.toast.classList.remove('is-visible');
-  }, 2400);
+  }, 2200);
 }
 
 function revokeImageUrl() {
@@ -73,12 +256,13 @@ function revokeImageUrl() {
 
 function resetOutput() {
   state.output = '';
+  state.outputDimensions = null;
   elements.asciiArt.textContent = '';
   elements.asciiArt.classList.add('is-hidden');
   elements.emptyState.classList.remove('is-hidden');
   elements.copy.disabled = true;
   elements.download.disabled = true;
-  elements.outputMeta.textContent = state.image ? 'Ready to convert' : 'Waiting for an image';
+  updateDynamicText();
 }
 
 function clearImage() {
@@ -113,7 +297,7 @@ function syncAspectHeight() {
 
 function loadImageFile(file) {
   if (!file || !file.type.startsWith('image/')) {
-    showToast('Please choose a valid image file.', 'error');
+    showToast(t('invalidImage'), 'error');
     return;
   }
 
@@ -134,20 +318,20 @@ function loadImageFile(file) {
 
     elements.imagePreview.src = objectUrl;
     elements.imageName.textContent = file.name;
-    elements.imageMeta.textContent = `${numberFormatter.format(image.naturalWidth)} × ${numberFormatter.format(image.naturalHeight)} px`;
+    elements.imageMeta.textContent = `${formatNumber(image.naturalWidth)} × ${formatNumber(image.naturalHeight)} px`;
     elements.previewFrame.classList.remove('is-hidden');
     elements.convert.disabled = false;
     elements.clear.disabled = false;
 
     syncAspectHeight();
     resetOutput();
-    showToast('Image ready.');
+    showToast(t('imageReady'));
   };
 
   image.onerror = () => {
     URL.revokeObjectURL(objectUrl);
     if (loadVersion !== state.loadVersion) return;
-    showToast('This image could not be decoded.', 'error');
+    showToast(t('imageDecodeError'), 'error');
   };
 
   image.src = objectUrl;
@@ -155,12 +339,12 @@ function loadImageFile(file) {
 
 function readDimensions() {
   if (!state.image) {
-    throw new Error('Choose an image first.');
+    throw new Error(t('chooseFirst'));
   }
 
   const width = Number.parseInt(elements.width.value, 10);
   if (!Number.isInteger(width) || width < 4 || width > MAX_DIMENSION) {
-    throw new Error(`Width must be between 4 and ${MAX_DIMENSION}.`);
+    throw new Error(t('widthRange', { max: formatNumber(MAX_DIMENSION) }));
   }
 
   let height;
@@ -174,14 +358,12 @@ function readDimensions() {
   }
 
   if (!Number.isInteger(height) || height < 1 || height > MAX_DIMENSION) {
-    throw new Error(`Height must be between 1 and ${MAX_DIMENSION}.`);
+    throw new Error(t('heightRange', { max: formatNumber(MAX_DIMENSION) }));
   }
 
   const pixelCount = width * height;
   if (pixelCount > MAX_OUTPUT_PIXELS) {
-    throw new Error(
-      `Output is too large. Keep it under ${numberFormatter.format(MAX_OUTPUT_PIXELS)} characters.`
-    );
+    throw new Error(t('outputTooLarge', { max: formatNumber(MAX_OUTPUT_PIXELS) }));
   }
 
   return { width, height, pixelCount };
@@ -194,7 +376,7 @@ function readCharset() {
 
   const characters = Array.from(rawCharset ?? '');
   if (characters.length < 2) {
-    throw new Error('Use at least two characters in the character set.');
+    throw new Error(t('charsetTooShort'));
   }
 
   return characters;
@@ -242,9 +424,10 @@ function renderAscii(image, width, height, characters) {
 }
 
 function setBusy(isBusy) {
+  state.isBusy = isBusy;
   elements.convert.disabled = isBusy || !state.image;
   elements.clear.disabled = isBusy || !state.image;
-  elements.convert.textContent = isBusy ? 'Converting…' : 'Convert image';
+  updateDynamicText();
 }
 
 function convertImage() {
@@ -261,7 +444,6 @@ function convertImage() {
 
   const image = state.image;
   setBusy(true);
-  elements.outputMeta.textContent = 'Converting…';
 
   window.requestAnimationFrame(() => {
     try {
@@ -271,18 +453,20 @@ function convertImage() {
         dimensions.height,
         characters
       );
+      state.outputDimensions = dimensions;
 
       elements.asciiArt.textContent = state.output;
       elements.emptyState.classList.add('is-hidden');
       elements.asciiArt.classList.remove('is-hidden');
       elements.copy.disabled = false;
       elements.download.disabled = false;
-      elements.outputMeta.textContent = `${dimensions.width} × ${dimensions.height} · ${numberFormatter.format(dimensions.pixelCount)} characters`;
-      showToast('ASCII art created.');
+      showToast(t('created'));
     } catch (error) {
       console.error(error);
-      elements.outputMeta.textContent = 'Conversion failed';
-      showToast('Conversion failed. Try a smaller output size.', 'error');
+      state.output = '';
+      state.outputDimensions = null;
+      elements.outputMeta.textContent = t('conversionFailed');
+      showToast(t('conversionFailedHint'), 'error');
     } finally {
       setBusy(false);
     }
@@ -315,10 +499,10 @@ async function copyOutput() {
     } else {
       fallbackCopy(state.output);
     }
-    showToast('Copied to clipboard.');
+    showToast(t('copied'));
   } catch (error) {
     console.error(error);
-    showToast('Copy failed.', 'error');
+    showToast(t('copyFailed'), 'error');
   }
 }
 
@@ -334,7 +518,7 @@ function downloadOutput() {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
-  showToast('Download started.');
+  showToast(t('downloadStarted'));
 }
 
 function handleDrop(event) {
@@ -342,6 +526,15 @@ function handleDrop(event) {
   elements.dropZone.classList.remove('is-dragging');
   loadImageFile(event.dataTransfer?.files?.[0]);
 }
+
+function initializeLanguage() {
+  const savedMode = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  applyLanguage(['auto', 'en', 'ja'].includes(savedMode) ? savedMode : 'auto', { persist: false });
+}
+
+elements.language.addEventListener('change', () => {
+  applyLanguage(elements.language.value);
+});
 
 elements.upload.addEventListener('change', () => {
   loadImageFile(elements.upload.files?.[0]);
@@ -385,3 +578,5 @@ elements.clear.addEventListener('click', clearImage);
 elements.copy.addEventListener('click', copyOutput);
 elements.download.addEventListener('click', downloadOutput);
 window.addEventListener('beforeunload', revokeImageUrl);
+
+initializeLanguage();
