@@ -6,8 +6,24 @@
   <meta id="metaDescription" name="description" content="Convert images into ASCII art in your browser." />
   <meta name="color-scheme" content="dark light" />
   <title>AA Maker</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="main.js" defer></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <script>
+    (() => {
+      const cacheKey = Date.now();
+      const stylesheet = document.createElement('link');
+      stylesheet.rel = 'stylesheet';
+      stylesheet.href = `style.css?v=${cacheKey}`;
+      document.head.appendChild(stylesheet);
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const script = document.createElement('script');
+        script.src = `main.js?v=${cacheKey}`;
+        document.body.appendChild(script);
+      }, { once: true });
+    })();
+  </script>
 </head>
 <body>
   <div class="app-shell">
