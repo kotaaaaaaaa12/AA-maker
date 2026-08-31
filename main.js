@@ -5,11 +5,11 @@ const MAX_OUTPUT_PIXELS = 500000;
 const LANGUAGE_STORAGE_KEY = 'aa-maker-language';
 
 const elements = Object.freeze({
-  controls: document.getElementById('controls'),
   upload: document.getElementById('upload'),
   dropZone: document.getElementById('dropZone'),
-  previewFrame: document.getElementById('previewFrame'),
+  dropPlaceholder: document.getElementById('dropPlaceholder'),
   imagePreview: document.getElementById('imagePreview'),
+  imageBadge: document.getElementById('imageBadge'),
   imageName: document.getElementById('imageName'),
   imageMeta: document.getElementById('imageMeta'),
   width: document.getElementById('width'),
@@ -30,8 +30,8 @@ const elements = Object.freeze({
   metaDescription: document.getElementById('metaDescription')
 });
 
-const context = elements.canvas.getContext('2d', { willReadFrequently: true });
 const scaleModeInputs = Array.from(document.querySelectorAll('input[name="scaleMode"]'));
+const context = elements.canvas.getContext('2d', { willReadFrequently: true });
 
 const CHARSETS = Object.freeze({
   dots: '⣿⠿⠾⠽⠼⠻⠺⠹⠸⠷⠶⠵⠴⠳⠲⠱⠰⠯⠮⠭⠬⠫⠪⠩⠨⠧⠦⠥⠤⠣⠢⠡⠠⠟⠞⠝⠜⠛⠚⠙⠘⠗⠖⠕⠔⠓⠒⠑⠐⠏⠎⠍⠌⠋⠊⠉⠈⠇⠆⠅⠄⠃⠂⠁⠀',
@@ -49,12 +49,15 @@ const MESSAGES = Object.freeze({
     title: 'AA Maker',
     description: 'Convert images into ASCII art in your browser.',
     language: 'Language',
-    image: 'Image',
+    source: 'Source',
+    settings: 'Settings',
+    output: 'Output',
     chooseImage: 'Choose image',
-    dropImage: 'or drop here',
+    dropHint: 'or drop it here',
+    clear: 'Clear',
     size: 'Size',
     scaleMode: 'Scale mode',
-    autoRatio: 'Auto ratio',
+    autoRatio: 'Auto',
     custom: 'Custom',
     width: 'Width',
     height: 'Height',
@@ -69,42 +72,42 @@ const MESSAGES = Object.freeze({
     charsetKanji: 'Kanji',
     charsetCustom: 'Custom',
     customCharacters: 'Custom characters',
-    customPlaceholder: 'Dark → light',
+    customPlaceholder: 'Dark to light',
     convert: 'Convert',
-    converting: 'Converting…',
-    clear: 'Clear',
-    output: 'Output',
-    waiting: 'No image',
+    converting: 'Converting',
+    waiting: 'Waiting',
     ready: 'Ready',
+    empty: 'Output appears here',
     copy: 'Copy',
     download: 'Download',
-    empty: 'Choose an image to start.',
     invalidImage: 'Choose a valid image.',
-    imageReady: 'Image ready.',
+    imageLoaded: 'Image loaded.',
     imageDecodeError: 'Could not read this image.',
     chooseFirst: 'Choose an image first.',
-    widthRange: 'Width must be 4–{max}.',
-    heightRange: 'Height must be 1–{max}.',
-    outputTooLarge: 'Keep output under {max} characters.',
+    widthRange: 'Width must be between 4 and {max}.',
+    heightRange: 'Height must be between 1 and {max}.',
+    outputTooLarge: 'Output must stay under {max} characters.',
     charsetTooShort: 'Use at least two characters.',
-    created: 'Created.',
-    conversionFailed: 'Conversion failed.',
-    conversionFailedHint: 'Conversion failed. Try a smaller size.',
+    converted: 'Converted.',
+    conversionFailed: 'Conversion failed. Try a smaller size.',
     copied: 'Copied.',
     copyFailed: 'Copy failed.',
-    downloadStarted: 'Download started.',
+    downloaded: 'Downloaded.',
     outputMeta: '{width} × {height} · {count} chars'
   },
   ja: {
     title: 'AA Maker',
     description: '画像をブラウザ上でAAに変換します。',
     language: '言語',
-    image: '画像',
+    source: '画像',
+    settings: '設定',
+    output: '出力',
     chooseImage: '画像を選択',
-    dropImage: 'またはここにドロップ',
+    dropHint: 'またはここにドロップ',
+    clear: 'クリア',
     size: 'サイズ',
     scaleMode: 'サイズ設定',
-    autoRatio: '比率を維持',
+    autoRatio: '自動',
     custom: '指定',
     width: '幅',
     height: '高さ',
@@ -119,30 +122,27 @@ const MESSAGES = Object.freeze({
     charsetKanji: '漢字',
     charsetCustom: 'カスタム',
     customCharacters: 'カスタム文字',
-    customPlaceholder: '暗 → 明',
+    customPlaceholder: '暗い → 明るい',
     convert: '変換',
-    converting: '変換中…',
-    clear: 'クリア',
-    output: '出力',
-    waiting: '画像なし',
+    converting: '変換中',
+    waiting: '待機中',
     ready: '準備完了',
+    empty: 'ここにAAが表示されます',
     copy: 'コピー',
     download: '保存',
-    empty: '画像を選択して開始',
     invalidImage: '画像ファイルを選んでください。',
-    imageReady: '画像を読み込みました。',
+    imageLoaded: '画像を読み込みました。',
     imageDecodeError: '画像を読み込めませんでした。',
     chooseFirst: '先に画像を選んでください。',
     widthRange: '幅は4〜{max}にしてください。',
     heightRange: '高さは1〜{max}にしてください。',
     outputTooLarge: '出力は{max}文字以内にしてください。',
     charsetTooShort: '文字は2文字以上必要です。',
-    created: '変換しました。',
-    conversionFailed: '変換に失敗しました。',
-    conversionFailedHint: '変換に失敗しました。サイズを小さくしてください。',
+    converted: '変換しました。',
+    conversionFailed: '変換に失敗しました。サイズを小さくしてください。',
     copied: 'コピーしました。',
     copyFailed: 'コピーに失敗しました。',
-    downloadStarted: '保存を開始しました。',
+    downloaded: '保存しました。',
     outputMeta: '{width} × {height} · {count}文字'
   }
 });
@@ -152,26 +152,44 @@ const state = {
   objectUrl: null,
   output: '',
   outputDimensions: null,
-  toastTimer: null,
-  loadVersion: 0,
   languageMode: 'auto',
   locale: 'en',
+  loadVersion: 0,
+  toastTimer: 0,
   isBusy: false
 };
 
-function detectLocale() {
-  const browserLanguage = navigator.languages?.[0] || navigator.language || 'en';
-  return browserLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+function getStoredLanguage() {
+  try {
+    return localStorage.getItem(LANGUAGE_STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
-function getLocaleForMode(mode) {
+function storeLanguage(mode) {
+  try {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, mode);
+  } catch {
+    // Storage can be unavailable in privacy-restricted contexts.
+  }
+}
+
+function detectLocale() {
+  const preferredLanguage = navigator.languages?.[0] || navigator.language || 'en';
+  return preferredLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+}
+
+function resolveLocale(mode) {
   if (mode === 'ja') return 'ja';
   if (mode === 'en') return 'en';
   return detectLocale();
 }
 
 function t(key, replacements = {}) {
-  const template = MESSAGES[state.locale][key] ?? MESSAGES.en[key] ?? key;
+  const dictionary = MESSAGES[state.locale] || MESSAGES.en;
+  const template = dictionary[key] ?? MESSAGES.en[key] ?? key;
+
   return Object.entries(replacements).reduce(
     (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
     template
@@ -183,13 +201,15 @@ function formatNumber(value) {
 }
 
 function updateDynamicText() {
+  const convertLabel = elements.convert.querySelector('[data-i18n="convert"]');
+
   if (state.isBusy) {
-    elements.convert.textContent = t('converting');
+    convertLabel.textContent = t('converting');
     elements.outputMeta.textContent = t('converting');
     return;
   }
 
-  elements.convert.textContent = t('convert');
+  convertLabel.textContent = t('convert');
 
   if (state.output && state.outputDimensions) {
     const { width, height, pixelCount } = state.outputDimensions;
@@ -206,12 +226,10 @@ function updateDynamicText() {
 
 function applyLanguage(mode, { persist = true } = {}) {
   state.languageMode = ['auto', 'en', 'ja'].includes(mode) ? mode : 'auto';
-  state.locale = getLocaleForMode(state.languageMode);
+  state.locale = resolveLocale(state.languageMode);
   elements.language.value = state.languageMode;
 
-  if (persist) {
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, state.languageMode);
-  }
+  if (persist) storeLanguage(state.languageMode);
 
   document.documentElement.lang = state.locale;
   document.title = t('title');
@@ -227,14 +245,12 @@ function applyLanguage(mode, { persist = true } = {}) {
   });
 
   document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
-    element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
+    const translated = t(element.dataset.i18nAriaLabel);
+    element.setAttribute('aria-label', translated);
+    element.setAttribute('title', translated);
   });
 
   updateDynamicText();
-}
-
-function getScaleMode() {
-  return scaleModeInputs.find((input) => input.checked)?.value ?? 'aspect';
 }
 
 function showToast(message, type = 'info') {
@@ -245,7 +261,11 @@ function showToast(message, type = 'info') {
 
   state.toastTimer = window.setTimeout(() => {
     elements.toast.classList.remove('is-visible');
-  }, 2200);
+  }, 1800);
+}
+
+function getScaleMode() {
+  return scaleModeInputs.find((input) => input.checked)?.value ?? 'aspect';
 }
 
 function revokeImageUrl() {
@@ -273,20 +293,21 @@ function clearImage() {
   elements.imagePreview.removeAttribute('src');
   elements.imageName.textContent = '';
   elements.imageMeta.textContent = '';
-  elements.previewFrame.classList.add('is-hidden');
+  elements.dropZone.classList.remove('has-image');
+  elements.imageBadge.classList.add('is-hidden');
   elements.convert.disabled = true;
   elements.clear.disabled = true;
   resetOutput();
 }
 
 function syncAspectHeight() {
-  const isAspectMode = getScaleMode() === 'aspect';
-  elements.height.disabled = isAspectMode;
+  const autoRatio = getScaleMode() === 'aspect';
+  elements.height.disabled = autoRatio;
 
-  if (!isAspectMode || !state.image) return;
+  if (!autoRatio || !state.image) return;
 
   const width = Number.parseInt(elements.width.value, 10);
-  if (!Number.isFinite(width) || width < 1) return;
+  if (!Number.isInteger(width) || width < 1) return;
 
   const height = Math.max(
     1,
@@ -301,13 +322,13 @@ function loadImageFile(file) {
     return;
   }
 
-  const loadVersion = ++state.loadVersion;
+  const version = ++state.loadVersion;
   const objectUrl = URL.createObjectURL(file);
   const image = new Image();
   image.decoding = 'async';
 
   image.onload = () => {
-    if (loadVersion !== state.loadVersion) {
+    if (version !== state.loadVersion) {
       URL.revokeObjectURL(objectUrl);
       return;
     }
@@ -318,19 +339,20 @@ function loadImageFile(file) {
 
     elements.imagePreview.src = objectUrl;
     elements.imageName.textContent = file.name;
-    elements.imageMeta.textContent = `${formatNumber(image.naturalWidth)} × ${formatNumber(image.naturalHeight)} px`;
-    elements.previewFrame.classList.remove('is-hidden');
+    elements.imageMeta.textContent = `${formatNumber(image.naturalWidth)} × ${formatNumber(image.naturalHeight)}`;
+    elements.dropZone.classList.add('has-image');
+    elements.imageBadge.classList.remove('is-hidden');
     elements.convert.disabled = false;
     elements.clear.disabled = false;
 
     syncAspectHeight();
     resetOutput();
-    showToast(t('imageReady'));
+    showToast(t('imageLoaded'));
   };
 
   image.onerror = () => {
     URL.revokeObjectURL(objectUrl);
-    if (loadVersion !== state.loadVersion) return;
+    if (version !== state.loadVersion) return;
     showToast(t('imageDecodeError'), 'error');
   };
 
@@ -338,24 +360,16 @@ function loadImageFile(file) {
 }
 
 function readDimensions() {
-  if (!state.image) {
-    throw new Error(t('chooseFirst'));
-  }
+  if (!state.image) throw new Error(t('chooseFirst'));
 
   const width = Number.parseInt(elements.width.value, 10);
   if (!Number.isInteger(width) || width < 4 || width > MAX_DIMENSION) {
     throw new Error(t('widthRange', { max: formatNumber(MAX_DIMENSION) }));
   }
 
-  let height;
-  if (getScaleMode() === 'aspect') {
-    height = Math.max(
-      1,
-      Math.round(width * (state.image.naturalHeight / state.image.naturalWidth))
-    );
-  } else {
-    height = Number.parseInt(elements.height.value, 10);
-  }
+  const height = getScaleMode() === 'aspect'
+    ? Math.max(1, Math.round(width * (state.image.naturalHeight / state.image.naturalWidth)))
+    : Number.parseInt(elements.height.value, 10);
 
   if (!Number.isInteger(height) || height < 1 || height > MAX_DIMENSION) {
     throw new Error(t('heightRange', { max: formatNumber(MAX_DIMENSION) }));
@@ -370,25 +384,21 @@ function readDimensions() {
 }
 
 function readCharset() {
-  const rawCharset = elements.charset.value === 'custom'
+  const raw = elements.charset.value === 'custom'
     ? elements.customChars.value
     : CHARSETS[elements.charset.value];
 
-  const characters = Array.from(rawCharset ?? '');
-  if (characters.length < 2) {
-    throw new Error(t('charsetTooShort'));
-  }
-
+  const characters = Array.from(raw ?? '');
+  if (characters.length < 2) throw new Error(t('charsetTooShort'));
   return characters;
 }
 
-function pixelBrightness(data, index) {
+function getBrightness(data, index) {
   const red = data[index];
   const green = data[index + 1];
   const blue = data[index + 2];
   const alpha = data[index + 3] / 255;
   const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
-
   return 255 - ((255 - luminance) * alpha);
 }
 
@@ -400,7 +410,7 @@ function renderAscii(image, width, height, characters) {
   context.drawImage(image, 0, 0, width, height);
 
   const data = context.getImageData(0, 0, width, height).data;
-  const maxCharacterIndex = characters.length - 1;
+  const maxIndex = characters.length - 1;
   const rows = new Array(height);
 
   for (let y = 0; y < height; y += 1) {
@@ -409,9 +419,9 @@ function renderAscii(image, width, height, characters) {
 
     for (let x = 0; x < width; x += 1) {
       const pixelIndex = (rowOffset + x) * 4;
-      const brightness = pixelBrightness(data, pixelIndex);
+      const brightness = getBrightness(data, pixelIndex);
       const characterIndex = Math.min(
-        maxCharacterIndex,
+        maxIndex,
         Math.floor((brightness / 255) * characters.length)
       );
       row[x] = characters[characterIndex];
@@ -442,13 +452,12 @@ function convertImage() {
     return;
   }
 
-  const image = state.image;
   setBusy(true);
 
-  window.requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
     try {
       state.output = renderAscii(
-        image,
+        state.image,
         dimensions.width,
         dimensions.height,
         characters
@@ -460,13 +469,11 @@ function convertImage() {
       elements.asciiArt.classList.remove('is-hidden');
       elements.copy.disabled = false;
       elements.download.disabled = false;
-      showToast(t('created'));
+      showToast(t('converted'));
     } catch (error) {
       console.error(error);
-      state.output = '';
-      state.outputDimensions = null;
-      elements.outputMeta.textContent = t('conversionFailed');
-      showToast(t('conversionFailedHint'), 'error');
+      resetOutput();
+      showToast(t('conversionFailed'), 'error');
     } finally {
       setBusy(false);
     }
@@ -484,10 +491,7 @@ function fallbackCopy(text) {
 
   const copied = document.execCommand('copy');
   textarea.remove();
-
-  if (!copied) {
-    throw new Error('Copy command failed.');
-  }
+  if (!copied) throw new Error('Copy command failed.');
 }
 
 async function copyOutput() {
@@ -513,12 +517,12 @@ function downloadOutput() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'ascii-art.txt';
+  link.download = 'aa.txt';
   document.body.appendChild(link);
   link.click();
   link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
-  showToast(t('downloadStarted'));
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  showToast(t('downloaded'));
 }
 
 function handleDrop(event) {
@@ -528,8 +532,8 @@ function handleDrop(event) {
 }
 
 function initializeLanguage() {
-  const savedMode = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  applyLanguage(['auto', 'en', 'ja'].includes(savedMode) ? savedMode : 'auto', { persist: false });
+  const saved = getStoredLanguage();
+  applyLanguage(['auto', 'en', 'ja'].includes(saved) ? saved : 'auto', { persist: false });
 }
 
 elements.language.addEventListener('change', () => {
@@ -568,15 +572,15 @@ scaleModeInputs.forEach((input) => {
 });
 
 elements.width.addEventListener('input', syncAspectHeight);
-
-elements.controls.addEventListener('submit', (event) => {
-  event.preventDefault();
-  convertImage();
-});
-
+elements.convert.addEventListener('click', convertImage);
 elements.clear.addEventListener('click', clearImage);
 elements.copy.addEventListener('click', copyOutput);
 elements.download.addEventListener('click', downloadOutput);
+
+window.addEventListener('languagechange', () => {
+  if (state.languageMode === 'auto') applyLanguage('auto', { persist: false });
+});
+
 window.addEventListener('beforeunload', revokeImageUrl);
 
 initializeLanguage();
