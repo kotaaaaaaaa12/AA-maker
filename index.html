@@ -91,13 +91,15 @@
           <div class="field-grid">
             <label class="field" for="width">
               <span data-i18n="width">Width</span>
-              <input id="width" type="number" value="50" min="4" max="1000" inputmode="numeric" />
+              <input id="width" type="number" value="50" min="4" inputmode="numeric" />
             </label>
             <label class="field" for="height">
               <span data-i18n="height">Height</span>
-              <input id="height" type="number" value="50" min="1" max="1000" inputmode="numeric" disabled />
+              <input id="height" type="number" value="50" min="1" inputmode="numeric" disabled />
             </label>
           </div>
+
+          <div id="sizeWarning" class="size-warning is-hidden" role="status" aria-live="polite"></div>
         </section>
 
         <section class="panel-section">

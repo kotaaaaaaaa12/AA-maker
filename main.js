@@ -1,7 +1,7 @@
 'use strict';
 
-const MAX_DIMENSION = 1000;
-const MAX_OUTPUT_PIXELS = 500000;
+const WARNING_DIMENSION = 1000;
+const WARNING_OUTPUT_PIXELS = 500000;
 const LANGUAGE_STORAGE_KEY = 'aa-maker-language';
 const THEME_STORAGE_KEY = 'aa-maker-theme';
 
@@ -15,6 +15,7 @@ const elements = Object.freeze({
   imageMeta: document.getElementById('imageMeta'),
   width: document.getElementById('width'),
   height: document.getElementById('height'),
+  sizeWarning: document.getElementById('sizeWarning'),
   charset: document.getElementById('charset'),
   customCharsField: document.getElementById('customCharsField'),
   customChars: document.getElementById('customChars'),
@@ -90,9 +91,9 @@ const MESSAGES = Object.freeze({
     imageLoaded: 'Image loaded.',
     imageDecodeError: 'Could not read this image.',
     chooseFirst: 'Choose an image first.',
-    widthRange: 'Width must be between 4 and {max}.',
-    heightRange: 'Height must be between 1 and {max}.',
-    outputTooLarge: 'Output must stay under {max} characters.',
+    widthInvalid: 'Width must be 4 or more.',
+    heightInvalid: 'Height must be 1 or more.',
+    sizeWarning: 'Large output: about {count} characters. This may freeze or crash the browser.',
     charsetTooShort: 'Use at least two characters.',
     converted: 'Converted.',
     conversionFailed: 'Conversion failed. Try a smaller size.',
@@ -143,9 +144,9 @@ const MESSAGES = Object.freeze({
     imageLoaded: '画像を読み込みました。',
     imageDecodeError: '画像を読み込めませんでした。',
     chooseFirst: '先に画像を選んでください。',
-    widthRange: '幅は4〜{max}にしてください。',
-    heightRange: '高さは1〜{max}にしてください。',
-    outputTooLarge: '出力は{max}文字以内にしてください。',
+    widthInvalid: '幅は4以上にしてください。',
+    heightInvalid: '高さは1以上にしてください。',
+    sizeWarning: 'かなり重い設定です：約{count}文字。ブラウザが固まったりクラッシュする可能性があります。',
     charsetTooShort: '文字は2文字以上必要です。',
     converted: '変換しました。',
     conversionFailed: '変換に失敗しました。サイズを小さくしてください。',
@@ -310,6 +311,7 @@ function renderLanguage() {
 
   renderDynamicText();
   renderTheme();
+  updateSizeWarning();
 }
 
 function setLanguageMode(mode, { persist = true } = {}) {
@@ -365,19 +367,22 @@ function clearImage() {
   elements.convert.disabled = true;
   elements.clear.disabled = true;
   resetOutput();
+  updateSizeWarning();
 }
 
 function syncAspectHeight() {
   const useAspectRatio = getScaleMode() === 'aspect';
   elements.height.disabled = useAspectRatio;
 
-  if (!useAspectRatio || !state.image) return;
+  if (useAspectRatio && state.image) {
+    const width = Number(elements.width.value);
+    if (Number.isSafeInteger(width) && width >= 1) {
+      const height = Math.max(1, Math.round(width * (state.image.naturalHeight / state.image.naturalWidth)));
+      elements.height.value = String(height);
+    }
+  }
 
-  const width = Number.parseInt(elements.width.value, 10);
-  if (!Number.isInteger(width) || width < 1) return;
-
-  const height = Math.max(1, Math.round(width * (state.image.naturalHeight / state.image.naturalWidth)));
-  elements.height.value = String(height);
+  updateSizeWarning();
 }
 
 function loadImageFile(file) {
@@ -423,28 +428,63 @@ function loadImageFile(file) {
   image.src = objectUrl;
 }
 
-function readDimensions() {
-  if (!state.image) throw new Error(t('chooseFirst'));
-
-  const width = Number.parseInt(elements.width.value, 10);
-  if (!Number.isInteger(width) || width < 4 || width > MAX_DIMENSION) {
-    throw new Error(t('widthRange', { max: formatNumber(MAX_DIMENSION) }));
+function getRequestedDimensions() {
+  const width = Number(elements.width.value);
+  if (!Number.isSafeInteger(width) || width < 4) {
+    throw new Error(t('widthInvalid'));
   }
 
   const height = getScaleMode() === 'aspect'
-    ? Math.max(1, Math.round(width * (state.image.naturalHeight / state.image.naturalWidth)))
-    : Number.parseInt(elements.height.value, 10);
+    ? Math.max(1, Math.round(width * (state.image?.naturalHeight / state.image?.naturalWidth || 1)))
+    : Number(elements.height.value);
 
-  if (!Number.isInteger(height) || height < 1 || height > MAX_DIMENSION) {
-    throw new Error(t('heightRange', { max: formatNumber(MAX_DIMENSION) }));
+  if (!Number.isSafeInteger(height) || height < 1) {
+    throw new Error(t('heightInvalid'));
   }
 
   const pixelCount = width * height;
-  if (pixelCount > MAX_OUTPUT_PIXELS) {
-    throw new Error(t('outputTooLarge', { max: formatNumber(MAX_OUTPUT_PIXELS) }));
+  return { width, height, pixelCount };
+}
+
+function updateSizeWarning() {
+  if (!state.image) {
+    elements.sizeWarning.classList.add('is-hidden');
+    elements.sizeWarning.textContent = '';
+    return;
   }
 
-  return { width, height, pixelCount };
+  let dimensions;
+  try {
+    dimensions = getRequestedDimensions();
+  } catch {
+    elements.sizeWarning.classList.add('is-hidden');
+    elements.sizeWarning.textContent = '';
+    return;
+  }
+
+  const risky =
+    dimensions.width > WARNING_DIMENSION ||
+    dimensions.height > WARNING_DIMENSION ||
+    !Number.isSafeInteger(dimensions.pixelCount) ||
+    dimensions.pixelCount > WARNING_OUTPUT_PIXELS;
+
+  if (!risky) {
+    elements.sizeWarning.classList.add('is-hidden');
+    elements.sizeWarning.textContent = '';
+    return;
+  }
+
+  const count = Number.isSafeInteger(dimensions.pixelCount)
+    ? formatNumber(dimensions.pixelCount)
+    : '∞';
+
+  elements.sizeWarning.textContent = t('sizeWarning', { count });
+  elements.sizeWarning.classList.remove('is-hidden');
+}
+
+function readDimensions() {
+  if (!state.image) throw new Error(t('chooseFirst'));
+  return getRequestedDimensions();
 }
 
 function readCharset() {
@@ -615,13 +655,6 @@ async function downloadPng() {
 
     const cssWidth = Math.max(1, Math.ceil(textWidth + padding * 2));
     const cssHeight = Math.max(1, Math.ceil(lines.length * lineHeight + padding * 2));
-    const maxCanvasSide = 16384;
-    const maxCanvasArea = 64_000_000;
-
-    if (cssWidth > maxCanvasSide || cssHeight > maxCanvasSide || cssWidth * cssHeight > maxCanvasArea) {
-      throw new Error('PNG canvas is too large.');
-    }
-
     const exportCanvas = document.createElement('canvas');
     exportCanvas.width = cssWidth;
     exportCanvas.height = cssHeight;
@@ -725,6 +758,7 @@ scaleModeInputs.forEach((input) => {
 });
 
 elements.width.addEventListener('input', syncAspectHeight);
+elements.height.addEventListener('input', updateSizeWarning);
 elements.convert.addEventListener('click', convertImage);
 elements.clear.addEventListener('click', clearImage);
 elements.copy.addEventListener('click', copyOutput);
