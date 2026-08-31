@@ -9,7 +9,7 @@ const elements = Object.freeze({
   dropZone: document.getElementById('dropZone'),
   dropPlaceholder: document.getElementById('dropPlaceholder'),
   imagePreview: document.getElementById('imagePreview'),
-  imageBadge: document.getElementById('imageBadge'),
+  imageInfo: document.getElementById('imageInfo'),
   imageName: document.getElementById('imageName'),
   imageMeta: document.getElementById('imageMeta'),
   width: document.getElementById('width'),
@@ -26,10 +26,11 @@ const elements = Object.freeze({
   asciiArt: document.getElementById('ascii-art'),
   canvas: document.getElementById('canvas'),
   toast: document.getElementById('toast'),
-  language: document.getElementById('language'),
+  languageSwitcher: document.getElementById('languageSwitcher'),
   metaDescription: document.getElementById('metaDescription')
 });
 
+const languageButtons = Array.from(elements.languageSwitcher.querySelectorAll('[data-language]'));
 const scaleModeInputs = Array.from(document.querySelectorAll('input[name="scaleMode"]'));
 const context = elements.canvas.getContext('2d', { willReadFrequently: true });
 
@@ -49,24 +50,22 @@ const MESSAGES = Object.freeze({
     title: 'AA Maker',
     description: 'Convert images into ASCII art in your browser.',
     language: 'Language',
-    source: 'Source',
-    settings: 'Settings',
-    output: 'Output',
-    chooseImage: 'Choose image',
-    dropHint: 'or drop it here',
+    image: 'Image',
     clear: 'Clear',
+    chooseImage: 'Choose image',
+    dropImage: 'Drop image here',
     size: 'Size',
     scaleMode: 'Scale mode',
-    autoRatio: 'Auto',
+    auto: 'Auto',
     custom: 'Custom',
     width: 'Width',
     height: 'Height',
     characters: 'Characters',
     charsetDots: 'Braille',
     charsetNumbers: 'Numbers',
-    charsetUpper: 'A-Z',
-    charsetLower: 'a-z',
-    charsetBoth: 'A-Z + a-z',
+    charsetUpper: 'Uppercase',
+    charsetLower: 'Lowercase',
+    charsetBoth: 'Upper + lower',
     charsetKatakana: 'Katakana',
     charsetHiragana: 'Hiragana',
     charsetKanji: 'Kanji',
@@ -75,6 +74,7 @@ const MESSAGES = Object.freeze({
     customPlaceholder: 'Dark to light',
     convert: 'Convert',
     converting: 'Converting',
+    output: 'Output',
     waiting: 'Waiting',
     ready: 'Ready',
     empty: 'Output appears here',
@@ -99,24 +99,22 @@ const MESSAGES = Object.freeze({
     title: 'AA Maker',
     description: '画像をブラウザ上でAAに変換します。',
     language: '言語',
-    source: '画像',
-    settings: '設定',
-    output: '出力',
-    chooseImage: '画像を選択',
-    dropHint: 'またはここにドロップ',
+    image: '画像',
     clear: 'クリア',
+    chooseImage: '画像を選択',
+    dropImage: 'ここに画像をドロップ',
     size: 'サイズ',
     scaleMode: 'サイズ設定',
-    autoRatio: '自動',
+    auto: '自動',
     custom: '指定',
     width: '幅',
     height: '高さ',
     characters: '文字',
     charsetDots: '点字',
     charsetNumbers: '数字',
-    charsetUpper: 'A-Z',
-    charsetLower: 'a-z',
-    charsetBoth: 'A-Z + a-z',
+    charsetUpper: '英大文字',
+    charsetLower: '英小文字',
+    charsetBoth: '英大文字 + 小文字',
     charsetKatakana: 'カタカナ',
     charsetHiragana: 'ひらがな',
     charsetKanji: '漢字',
@@ -125,6 +123,7 @@ const MESSAGES = Object.freeze({
     customPlaceholder: '暗い → 明るい',
     convert: '変換',
     converting: '変換中',
+    output: '出力',
     waiting: '待機中',
     ready: '準備完了',
     empty: 'ここにAAが表示されます',
@@ -171,13 +170,13 @@ function storeLanguage(mode) {
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, mode);
   } catch {
-    // Storage can be unavailable in privacy-restricted contexts.
+    // Storage can be unavailable in restricted browser contexts.
   }
 }
 
 function detectLocale() {
-  const preferredLanguage = navigator.languages?.[0] || navigator.language || 'en';
-  return preferredLanguage.toLowerCase().startsWith('ja') ? 'ja' : 'en';
+  const preferred = navigator.languages?.[0] || navigator.language || 'en';
+  return String(preferred).toLowerCase().startsWith('ja') ? 'ja' : 'en';
 }
 
 function resolveLocale(mode) {
@@ -200,16 +199,13 @@ function formatNumber(value) {
   return new Intl.NumberFormat(state.locale === 'ja' ? 'ja-JP' : 'en-US').format(value);
 }
 
-function updateDynamicText() {
-  const convertLabel = elements.convert.querySelector('[data-i18n="convert"]');
+function renderDynamicText() {
+  elements.convert.textContent = state.isBusy ? t('converting') : t('convert');
 
   if (state.isBusy) {
-    convertLabel.textContent = t('converting');
     elements.outputMeta.textContent = t('converting');
     return;
   }
-
-  convertLabel.textContent = t('convert');
 
   if (state.output && state.outputDimensions) {
     const { width, height, pixelCount } = state.outputDimensions;
@@ -224,17 +220,11 @@ function updateDynamicText() {
   elements.outputMeta.textContent = state.image ? t('ready') : t('waiting');
 }
 
-function applyLanguage(mode, { persist = true } = {}) {
-  state.languageMode = ['auto', 'en', 'ja'].includes(mode) ? mode : 'auto';
-  state.locale = resolveLocale(state.languageMode);
-  elements.language.value = state.languageMode;
-
-  if (persist) storeLanguage(state.languageMode);
-
+function renderLanguage() {
   document.documentElement.lang = state.locale;
   document.title = t('title');
   elements.metaDescription.content = t('description');
-  elements.language.setAttribute('aria-label', t('language'));
+  elements.languageSwitcher.setAttribute('aria-label', t('language'));
 
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     element.textContent = t(element.dataset.i18n);
@@ -244,13 +234,28 @@ function applyLanguage(mode, { persist = true } = {}) {
     element.placeholder = t(element.dataset.i18nPlaceholder);
   });
 
-  document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
-    const translated = t(element.dataset.i18nAriaLabel);
-    element.setAttribute('aria-label', translated);
-    element.setAttribute('title', translated);
+  document.querySelectorAll('[data-i18n-aria]').forEach((element) => {
+    element.setAttribute('aria-label', t(element.dataset.i18nAria));
   });
 
-  updateDynamicText();
+  languageButtons.forEach((button) => {
+    const active = button.dataset.language === state.languageMode;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+
+  if (state.image) {
+    elements.imageMeta.textContent = `${formatNumber(state.image.naturalWidth)} × ${formatNumber(state.image.naturalHeight)}`;
+  }
+
+  renderDynamicText();
+}
+
+function setLanguageMode(mode, { persist = true } = {}) {
+  state.languageMode = ['auto', 'en', 'ja'].includes(mode) ? mode : 'auto';
+  state.locale = resolveLocale(state.languageMode);
+  if (persist) storeLanguage(state.languageMode);
+  renderLanguage();
 }
 
 function showToast(message, type = 'info') {
@@ -282,7 +287,7 @@ function resetOutput() {
   elements.emptyState.classList.remove('is-hidden');
   elements.copy.disabled = true;
   elements.download.disabled = true;
-  updateDynamicText();
+  renderDynamicText();
 }
 
 function clearImage() {
@@ -294,25 +299,22 @@ function clearImage() {
   elements.imageName.textContent = '';
   elements.imageMeta.textContent = '';
   elements.dropZone.classList.remove('has-image');
-  elements.imageBadge.classList.add('is-hidden');
+  elements.imageInfo.classList.add('is-hidden');
   elements.convert.disabled = true;
   elements.clear.disabled = true;
   resetOutput();
 }
 
 function syncAspectHeight() {
-  const autoRatio = getScaleMode() === 'aspect';
-  elements.height.disabled = autoRatio;
+  const useAspectRatio = getScaleMode() === 'aspect';
+  elements.height.disabled = useAspectRatio;
 
-  if (!autoRatio || !state.image) return;
+  if (!useAspectRatio || !state.image) return;
 
   const width = Number.parseInt(elements.width.value, 10);
   if (!Number.isInteger(width) || width < 1) return;
 
-  const height = Math.max(
-    1,
-    Math.round(width * (state.image.naturalHeight / state.image.naturalWidth))
-  );
+  const height = Math.max(1, Math.round(width * (state.image.naturalHeight / state.image.naturalWidth)));
   elements.height.value = String(height);
 }
 
@@ -341,7 +343,7 @@ function loadImageFile(file) {
     elements.imageName.textContent = file.name;
     elements.imageMeta.textContent = `${formatNumber(image.naturalWidth)} × ${formatNumber(image.naturalHeight)}`;
     elements.dropZone.classList.add('has-image');
-    elements.imageBadge.classList.remove('is-hidden');
+    elements.imageInfo.classList.remove('is-hidden');
     elements.convert.disabled = false;
     elements.clear.disabled = false;
 
@@ -420,10 +422,7 @@ function renderAscii(image, width, height, characters) {
     for (let x = 0; x < width; x += 1) {
       const pixelIndex = (rowOffset + x) * 4;
       const brightness = getBrightness(data, pixelIndex);
-      const characterIndex = Math.min(
-        maxIndex,
-        Math.floor((brightness / 255) * characters.length)
-      );
+      const characterIndex = Math.min(maxIndex, Math.floor((brightness / 255) * characters.length));
       row[x] = characters[characterIndex];
     }
 
@@ -437,7 +436,7 @@ function setBusy(isBusy) {
   state.isBusy = isBusy;
   elements.convert.disabled = isBusy || !state.image;
   elements.clear.disabled = isBusy || !state.image;
-  updateDynamicText();
+  renderDynamicText();
 }
 
 function convertImage() {
@@ -456,12 +455,7 @@ function convertImage() {
 
   requestAnimationFrame(() => {
     try {
-      state.output = renderAscii(
-        state.image,
-        dimensions.width,
-        dimensions.height,
-        characters
-      );
+      state.output = renderAscii(state.image, dimensions.width, dimensions.height, characters);
       state.outputDimensions = dimensions;
 
       elements.asciiArt.textContent = state.output;
@@ -532,12 +526,14 @@ function handleDrop(event) {
 }
 
 function initializeLanguage() {
-  const saved = getStoredLanguage();
-  applyLanguage(['auto', 'en', 'ja'].includes(saved) ? saved : 'auto', { persist: false });
+  const stored = getStoredLanguage();
+  setLanguageMode(['auto', 'en', 'ja'].includes(stored) ? stored : 'auto', { persist: false });
 }
 
-elements.language.addEventListener('change', () => {
-  applyLanguage(elements.language.value);
+languageButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setLanguageMode(button.dataset.language);
+  });
 });
 
 elements.upload.addEventListener('change', () => {
@@ -578,7 +574,10 @@ elements.copy.addEventListener('click', copyOutput);
 elements.download.addEventListener('click', downloadOutput);
 
 window.addEventListener('languagechange', () => {
-  if (state.languageMode === 'auto') applyLanguage('auto', { persist: false });
+  if (state.languageMode === 'auto') {
+    state.locale = resolveLocale('auto');
+    renderLanguage();
+  }
 });
 
 window.addEventListener('beforeunload', revokeImageUrl);

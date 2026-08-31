@@ -10,74 +10,53 @@
   <script src="main.js" defer></script>
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <a class="brand" href="./" aria-label="AA Maker">
-        <span class="brand-symbol" aria-hidden="true">AA</span>
-        <span class="brand-name">Maker</span>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="./" aria-label="AA Maker home">
+        <span class="brand-mark">AA</span>
+        <span>Maker</span>
       </a>
 
-      <div class="topbar-actions">
-        <label class="language-select" for="language">
-          <span class="sr-only" data-i18n="language">Language</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21M12 3C9.5 5.6 8.2 8.6 8.2 12S9.5 18.4 12 21"></path>
-          </svg>
-          <select id="language" aria-label="Language">
-            <option value="auto">Auto</option>
-            <option value="en">English</option>
-            <option value="ja">日本語</option>
-          </select>
-        </label>
-      </div>
+      <nav id="languageSwitcher" class="language-switcher" aria-label="Language">
+        <button type="button" data-language="auto">Auto</button>
+        <button type="button" data-language="en">English</button>
+        <button type="button" data-language="ja">日本語</button>
+      </nav>
     </header>
 
-    <main class="studio">
-      <section class="source-pane" aria-labelledby="sourceTitle">
-        <div class="pane-heading">
-          <div>
-            <span class="pane-kicker">01</span>
-            <h1 id="sourceTitle" data-i18n="source">Source</h1>
-          </div>
-          <button id="clear" class="text-button" type="button" disabled data-i18n="clear">Clear</button>
-        </div>
-
-        <label id="dropZone" class="drop-zone" for="upload" tabindex="0">
-          <input id="upload" type="file" accept="image/*" hidden />
-          <div id="dropPlaceholder" class="drop-placeholder">
-            <span class="drop-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 16V4M7 9l5-5 5 5"></path>
-                <path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"></path>
-              </svg>
-            </span>
-            <strong data-i18n="chooseImage">Choose image</strong>
-            <span data-i18n="dropHint">or drop it here</span>
+    <main class="workspace">
+      <aside class="control-panel">
+        <section class="panel-section">
+          <div class="section-heading">
+            <h1 data-i18n="image">Image</h1>
+            <button id="clear" class="quiet-button" type="button" disabled data-i18n="clear">Clear</button>
           </div>
 
-          <img id="imagePreview" class="image-preview" alt="" />
-          <div id="imageBadge" class="image-badge is-hidden">
-            <strong id="imageName"></strong>
+          <label id="dropZone" class="upload-card" for="upload" tabindex="0">
+            <input id="upload" type="file" accept="image/*" hidden />
+
+            <div id="dropPlaceholder" class="upload-placeholder">
+              <span class="upload-symbol" aria-hidden="true">+</span>
+              <strong data-i18n="chooseImage">Choose image</strong>
+              <span data-i18n="dropImage">Drop image here</span>
+            </div>
+
+            <img id="imagePreview" class="image-preview" alt="" />
+          </label>
+
+          <div id="imageInfo" class="image-info is-hidden">
+            <span id="imageName"></span>
             <span id="imageMeta"></span>
           </div>
-        </label>
-      </section>
+        </section>
 
-      <aside class="settings-pane" aria-labelledby="settingsTitle">
-        <div class="pane-heading compact">
-          <div>
-            <span class="pane-kicker">02</span>
-            <h2 id="settingsTitle" data-i18n="settings">Settings</h2>
-          </div>
-        </div>
+        <section class="panel-section">
+          <h2 data-i18n="size">Size</h2>
 
-        <div class="setting-block">
-          <div class="setting-label" data-i18n="size">Size</div>
-          <div class="segmented" role="radiogroup" data-i18n-aria-label="scaleMode">
+          <div class="mode-switch" role="radiogroup" data-i18n-aria="scaleMode">
             <label>
               <input type="radio" name="scaleMode" value="aspect" checked />
-              <span data-i18n="autoRatio">Auto</span>
+              <span data-i18n="auto">Auto</span>
             </label>
             <label>
               <input type="radio" name="scaleMode" value="custom" />
@@ -85,76 +64,56 @@
             </label>
           </div>
 
-          <div class="number-grid">
-            <label class="number-field" for="width">
+          <div class="field-grid">
+            <label class="field" for="width">
               <span data-i18n="width">Width</span>
               <input id="width" type="number" value="50" min="4" max="1000" inputmode="numeric" />
             </label>
-            <label class="number-field" for="height">
+            <label class="field" for="height">
               <span data-i18n="height">Height</span>
               <input id="height" type="number" value="50" min="1" max="1000" inputmode="numeric" disabled />
             </label>
           </div>
-        </div>
+        </section>
 
-        <div class="setting-block">
-          <label class="setting-label" for="charset" data-i18n="characters">Characters</label>
-          <div class="select-shell">
-            <select id="charset">
-              <option value="dots" data-i18n="charsetDots">Braille</option>
-              <option value="numbers" data-i18n="charsetNumbers">Numbers</option>
-              <option value="alpha_upper" data-i18n="charsetUpper">A-Z</option>
-              <option value="alpha_lower" data-i18n="charsetLower">a-z</option>
-              <option value="alpha_both" data-i18n="charsetBoth">A-Z + a-z</option>
-              <option value="kana" data-i18n="charsetKatakana">Katakana</option>
-              <option value="hiragana" data-i18n="charsetHiragana">Hiragana</option>
-              <option value="kanji" data-i18n="charsetKanji">Kanji</option>
-              <option value="custom" data-i18n="charsetCustom">Custom</option>
-            </select>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"></path></svg>
-          </div>
+        <section class="panel-section">
+          <label class="section-label" for="charset" data-i18n="characters">Characters</label>
+          <select id="charset" class="select-input">
+            <option value="dots" data-i18n="charsetDots">Braille</option>
+            <option value="numbers" data-i18n="charsetNumbers">Numbers</option>
+            <option value="alpha_upper" data-i18n="charsetUpper">Uppercase</option>
+            <option value="alpha_lower" data-i18n="charsetLower">Lowercase</option>
+            <option value="alpha_both" data-i18n="charsetBoth">Upper + lower</option>
+            <option value="kana" data-i18n="charsetKatakana">Katakana</option>
+            <option value="hiragana" data-i18n="charsetHiragana">Hiragana</option>
+            <option value="kanji" data-i18n="charsetKanji">Kanji</option>
+            <option value="custom" data-i18n="charsetCustom">Custom</option>
+          </select>
 
-          <label id="customCharsField" class="custom-field is-hidden" for="customChars">
+          <label id="customCharsField" class="field custom-field is-hidden" for="customChars">
             <span data-i18n="customCharacters">Custom characters</span>
             <input id="customChars" type="text" autocomplete="off" spellcheck="false" data-i18n-placeholder="customPlaceholder" />
           </label>
-        </div>
+        </section>
 
-        <button id="convert" class="convert-button" type="button" disabled>
-          <span data-i18n="convert">Convert</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5"></path></svg>
-        </button>
+        <button id="convert" class="primary-button" type="button" disabled data-i18n="convert">Convert</button>
       </aside>
 
-      <section class="output-pane" aria-labelledby="outputTitle">
-        <div class="output-heading">
+      <section class="result-panel" aria-labelledby="outputTitle">
+        <div class="result-header">
           <div>
-            <span class="pane-kicker">03</span>
             <h2 id="outputTitle" data-i18n="output">Output</h2>
+            <span id="outputMeta" class="output-meta" data-i18n="waiting">Waiting</span>
           </div>
 
-          <div class="output-actions">
-            <span id="outputMeta" class="output-meta" data-i18n="waiting">Waiting</span>
-            <button id="copy" class="icon-button" type="button" disabled data-i18n-aria-label="copy" title="Copy">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="8" y="8" width="11" height="11" rx="2"></rect>
-                <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>
-              </svg>
-            </button>
-            <button id="download" class="icon-button" type="button" disabled data-i18n-aria-label="download" title="Download">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 4v11M8 11l4 4 4-4"></path>
-                <path d="M5 19h14"></path>
-              </svg>
-            </button>
+          <div class="result-actions">
+            <button id="copy" class="action-button" type="button" disabled data-i18n="copy">Copy</button>
+            <button id="download" class="action-button" type="button" disabled data-i18n="download">Download</button>
           </div>
         </div>
 
-        <div class="output-stage">
-          <div id="emptyState" class="empty-state">
-            <span class="empty-glyph" aria-hidden="true">A</span>
-            <span data-i18n="empty">Output appears here</span>
-          </div>
+        <div class="output-window">
+          <div id="emptyState" class="empty-state" data-i18n="empty">Output appears here</div>
           <pre id="ascii-art" class="ascii-art is-hidden" tabindex="0"></pre>
         </div>
       </section>
