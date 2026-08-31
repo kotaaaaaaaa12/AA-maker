@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta id="metaDescription" name="description" content="Convert images into ASCII art in your browser." />
-  <meta name="color-scheme" content="dark" />
+  <meta name="color-scheme" content="dark light" />
   <title>AA Maker</title>
   <link rel="stylesheet" href="style.css" />
   <script src="main.js" defer></script>
@@ -17,11 +17,19 @@
         <span>Maker</span>
       </a>
 
-      <nav id="languageSwitcher" class="language-switcher" aria-label="Language">
-        <button type="button" data-language="auto">Auto</button>
-        <button type="button" data-language="en">English</button>
-        <button type="button" data-language="ja">日本語</button>
-      </nav>
+      <div class="header-controls">
+        <nav id="themeSwitcher" class="segmented-switcher theme-switcher" aria-label="Theme">
+          <button type="button" data-theme-mode="auto">Auto</button>
+          <button type="button" data-theme-mode="dark">Dark</button>
+          <button type="button" data-theme-mode="light">Light</button>
+        </nav>
+
+        <nav id="languageSwitcher" class="segmented-switcher language-switcher" aria-label="Language">
+          <button type="button" data-language="auto">Auto</button>
+          <button type="button" data-language="en">English</button>
+          <button type="button" data-language="ja">日本語</button>
+        </nav>
+      </div>
     </header>
 
     <main class="workspace">
@@ -108,7 +116,8 @@
 
           <div class="result-actions">
             <button id="copy" class="action-button" type="button" disabled data-i18n="copy">Copy</button>
-            <button id="download" class="action-button" type="button" disabled data-i18n="download">Download</button>
+            <button id="downloadTxt" class="action-button" type="button" disabled data-i18n="downloadTxt">TXT</button>
+            <button id="downloadPng" class="action-button" type="button" disabled data-i18n="downloadPng">PNG</button>
           </div>
         </div>
 

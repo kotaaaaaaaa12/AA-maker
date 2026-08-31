@@ -1,18 +1,51 @@
 :root {
-  color-scheme: dark;
+  color-scheme: dark light;
   --bg: #0a0b0d;
   --panel: #101216;
   --panel-soft: #15181d;
   --line: #252a31;
   --line-strong: #363d47;
   --text: #f2f4f7;
+  --text-soft: #cbd0d7;
   --muted: #8d96a3;
-  --accent: #f2f4f7;
+  --muted-strong: #687385;
+  --control-active: #22262d;
+  --output-bg: #0d0f12;
+  --output-text: #e7ebef;
+  --empty-text: #5f6874;
+  --disabled-text: #626a76;
+  --toast-bg: #191c21;
   --accent-text: #0b0c0e;
+  --primary-hover: #dfe3e8;
   --danger: #ff7676;
+  --focus: #8fb7ff;
+  --shadow: rgba(0, 0, 0, 0.4);
   --radius: 14px;
   --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "SFMono-Regular", "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f5f3;
+  --panel: #ffffff;
+  --panel-soft: #f0f0ed;
+  --line: #deded9;
+  --line-strong: #c8c8c1;
+  --text: #171816;
+  --text-soft: #454842;
+  --muted: #747970;
+  --muted-strong: #8b9187;
+  --control-active: #e8e8e4;
+  --output-bg: #ffffff;
+  --output-text: #111318;
+  --empty-text: #989d94;
+  --disabled-text: #a4a8a0;
+  --toast-bg: #ffffff;
+  --accent-text: #ffffff;
+  --primary-hover: #30322f;
+  --danger: #c93f3f;
+  --focus: #376dd8;
+  --shadow: rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -48,7 +81,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 .upload-card:focus-visible {
-  outline: 2px solid #8fb7ff;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -82,6 +115,12 @@ button {
   text-decoration: none;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .brand-mark {
   display: grid;
   width: 30px;
@@ -95,7 +134,7 @@ button {
   letter-spacing: -0.06em;
 }
 
-.language-switcher {
+.segmented-switcher {
   display: inline-flex;
   gap: 3px;
   padding: 3px;
@@ -104,7 +143,7 @@ button {
   background: var(--panel);
 }
 
-.language-switcher button {
+.segmented-switcher button {
   padding: 7px 10px;
   border-radius: 7px;
   background: transparent;
@@ -114,11 +153,11 @@ button {
   cursor: pointer;
 }
 
-.language-switcher button:hover {
+.segmented-switcher button:hover {
   color: var(--text);
 }
 
-.language-switcher button.is-active {
+.segmented-switcher button.is-active {
   background: var(--text);
   color: var(--accent-text);
 }
@@ -190,7 +229,7 @@ button {
 
 .upload-card:hover,
 .upload-card.is-dragging {
-  border-color: #687385;
+  border-color: var(--muted-strong);
   background: var(--panel-soft);
 }
 
@@ -260,7 +299,7 @@ button {
 .image-info span:first-child {
   min-width: 0;
   overflow: hidden;
-  color: #cbd0d7;
+  color: var(--text-soft);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -274,7 +313,7 @@ button {
 .section-label {
   display: block;
   margin: 0 0 10px;
-  color: #cbd0d7;
+  color: var(--text-soft);
   font-size: 0.72rem;
   font-weight: 740;
 }
@@ -312,7 +351,7 @@ button {
 }
 
 .mode-switch input:checked + span {
-  background: #22262d;
+  background: var(--control-active);
   color: var(--text);
 }
 
@@ -351,7 +390,7 @@ button {
 }
 
 .field input:disabled {
-  color: #626a76;
+  color: var(--disabled-text);
   cursor: not-allowed;
 }
 
@@ -376,7 +415,7 @@ button {
 }
 
 .primary-button:hover:not(:disabled) {
-  background: #dfe3e8;
+  background: var(--primary-hover);
 }
 
 .primary-button:disabled {
@@ -425,7 +464,7 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
-  color: #cbd0d7;
+  color: var(--text-soft);
   font-size: 0.68rem;
   font-weight: 700;
   cursor: pointer;
@@ -449,7 +488,7 @@ button {
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #0d0f12;
+  background: var(--output-bg);
 }
 
 .empty-state {
@@ -458,7 +497,7 @@ button {
   display: grid;
   place-items: center;
   padding: 24px;
-  color: #5f6874;
+  color: var(--empty-text);
   font-size: 0.72rem;
 }
 
@@ -466,7 +505,7 @@ button {
   min-width: max-content;
   margin: 0;
   padding: 22px;
-  color: #e7ebef;
+  color: var(--output-text);
   font-family: var(--mono);
   font-size: 7px;
   font-variant-ligatures: none;
@@ -484,9 +523,9 @@ button {
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 9px;
-  background: #191c21;
+  background: var(--toast-bg);
   color: var(--text);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px var(--shadow);
   font-size: 0.7rem;
   font-weight: 700;
   opacity: 0;
@@ -542,7 +581,7 @@ button {
     display: none;
   }
 
-  .language-switcher button {
+  .segmented-switcher button {
     padding: 7px 8px;
     font-size: 0.66rem;
   }
@@ -568,5 +607,18 @@ button {
 
   .output-window {
     min-height: 390px;
+  }
+}
+
+@media (max-width: 430px) {
+  .app-header {
+    align-items: flex-start;
+    padding: 10px 0;
+  }
+
+  .header-controls {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
   }
 }

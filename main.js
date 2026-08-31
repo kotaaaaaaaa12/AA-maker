@@ -3,6 +3,7 @@
 const MAX_DIMENSION = 1000;
 const MAX_OUTPUT_PIXELS = 500000;
 const LANGUAGE_STORAGE_KEY = 'aa-maker-language';
+const THEME_STORAGE_KEY = 'aa-maker-theme';
 
 const elements = Object.freeze({
   upload: document.getElementById('upload'),
@@ -20,17 +21,20 @@ const elements = Object.freeze({
   convert: document.getElementById('convert'),
   clear: document.getElementById('clear'),
   copy: document.getElementById('copy'),
-  download: document.getElementById('download'),
+  downloadTxt: document.getElementById('downloadTxt'),
+  downloadPng: document.getElementById('downloadPng'),
   outputMeta: document.getElementById('outputMeta'),
   emptyState: document.getElementById('emptyState'),
   asciiArt: document.getElementById('ascii-art'),
   canvas: document.getElementById('canvas'),
   toast: document.getElementById('toast'),
   languageSwitcher: document.getElementById('languageSwitcher'),
+  themeSwitcher: document.getElementById('themeSwitcher'),
   metaDescription: document.getElementById('metaDescription')
 });
 
 const languageButtons = Array.from(elements.languageSwitcher.querySelectorAll('[data-language]'));
+const themeButtons = Array.from(elements.themeSwitcher.querySelectorAll('[data-theme-mode]'));
 const scaleModeInputs = Array.from(document.querySelectorAll('input[name="scaleMode"]'));
 const context = elements.canvas.getContext('2d', { willReadFrequently: true });
 
@@ -50,6 +54,7 @@ const MESSAGES = Object.freeze({
     title: 'AA Maker',
     description: 'Convert images into ASCII art in your browser.',
     language: 'Language',
+    theme: 'Theme',
     image: 'Image',
     clear: 'Clear',
     chooseImage: 'Choose image',
@@ -79,7 +84,8 @@ const MESSAGES = Object.freeze({
     ready: 'Ready',
     empty: 'Output appears here',
     copy: 'Copy',
-    download: 'Download',
+    downloadTxt: 'TXT',
+    downloadPng: 'PNG',
     invalidImage: 'Choose a valid image.',
     imageLoaded: 'Image loaded.',
     imageDecodeError: 'Could not read this image.',
@@ -92,13 +98,16 @@ const MESSAGES = Object.freeze({
     conversionFailed: 'Conversion failed. Try a smaller size.',
     copied: 'Copied.',
     copyFailed: 'Copy failed.',
-    downloaded: 'Downloaded.',
+    txtDownloaded: 'TXT downloaded.',
+    pngDownloaded: 'PNG downloaded.',
+    pngFailed: 'PNG export failed. Try a smaller output.',
     outputMeta: '{width} × {height} · {count} chars'
   },
   ja: {
     title: 'AA Maker',
     description: '画像をブラウザ上でAAに変換します。',
     language: '言語',
+    theme: 'テーマ',
     image: '画像',
     clear: 'クリア',
     chooseImage: '画像を選択',
@@ -128,7 +137,8 @@ const MESSAGES = Object.freeze({
     ready: '準備完了',
     empty: 'ここにAAが表示されます',
     copy: 'コピー',
-    download: '保存',
+    downloadTxt: 'TXT',
+    downloadPng: 'PNG',
     invalidImage: '画像ファイルを選んでください。',
     imageLoaded: '画像を読み込みました。',
     imageDecodeError: '画像を読み込めませんでした。',
@@ -141,7 +151,9 @@ const MESSAGES = Object.freeze({
     conversionFailed: '変換に失敗しました。サイズを小さくしてください。',
     copied: 'コピーしました。',
     copyFailed: 'コピーに失敗しました。',
-    downloaded: '保存しました。',
+    txtDownloaded: 'TXTを保存しました。',
+    pngDownloaded: 'PNGを保存しました。',
+    pngFailed: 'PNGの書き出しに失敗しました。出力サイズを小さくしてください。',
     outputMeta: '{width} × {height} · {count}文字'
   }
 });
@@ -153,6 +165,8 @@ const state = {
   outputDimensions: null,
   languageMode: 'auto',
   locale: 'en',
+  themeMode: 'auto',
+  theme: 'dark',
   loadVersion: 0,
   toastTimer: 0,
   isBusy: false
@@ -172,6 +186,51 @@ function storeLanguage(mode) {
   } catch {
     // Storage can be unavailable in restricted browser contexts.
   }
+}
+
+function getStoredTheme() {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeTheme(mode) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+}
+
+function detectTheme() {
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function resolveTheme(mode) {
+  if (mode === 'light') return 'light';
+  if (mode === 'dark') return 'dark';
+  return detectTheme();
+}
+
+function renderTheme() {
+  document.documentElement.dataset.theme = state.theme;
+  document.documentElement.style.colorScheme = state.theme;
+  elements.themeSwitcher.setAttribute('aria-label', t('theme'));
+
+  themeButtons.forEach((button) => {
+    const active = button.dataset.themeMode === state.themeMode;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function setThemeMode(mode, { persist = true } = {}) {
+  state.themeMode = ['auto', 'dark', 'light'].includes(mode) ? mode : 'auto';
+  state.theme = resolveTheme(state.themeMode);
+  if (persist) storeTheme(state.themeMode);
+  renderTheme();
 }
 
 function detectLocale() {
@@ -225,6 +284,7 @@ function renderLanguage() {
   document.title = t('title');
   elements.metaDescription.content = t('description');
   elements.languageSwitcher.setAttribute('aria-label', t('language'));
+  elements.themeSwitcher.setAttribute('aria-label', t('theme'));
 
   document.querySelectorAll('[data-i18n]').forEach((element) => {
     element.textContent = t(element.dataset.i18n);
@@ -249,6 +309,7 @@ function renderLanguage() {
   }
 
   renderDynamicText();
+  renderTheme();
 }
 
 function setLanguageMode(mode, { persist = true } = {}) {
@@ -286,7 +347,8 @@ function resetOutput() {
   elements.asciiArt.classList.add('is-hidden');
   elements.emptyState.classList.remove('is-hidden');
   elements.copy.disabled = true;
-  elements.download.disabled = true;
+  elements.downloadTxt.disabled = true;
+  elements.downloadPng.disabled = true;
   renderDynamicText();
 }
 
@@ -400,8 +462,13 @@ function getBrightness(data, index) {
   const green = data[index + 1];
   const blue = data[index + 2];
   const alpha = data[index + 3] / 255;
-  const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
-  return 255 - ((255 - luminance) * alpha);
+  const background = state.theme === 'light' ? 255 : 0;
+
+  const compositedRed = (red * alpha) + (background * (1 - alpha));
+  const compositedGreen = (green * alpha) + (background * (1 - alpha));
+  const compositedBlue = (blue * alpha) + (background * (1 - alpha));
+
+  return (0.2126 * compositedRed) + (0.7152 * compositedGreen) + (0.0722 * compositedBlue);
 }
 
 function renderAscii(image, width, height, characters) {
@@ -462,7 +529,8 @@ function convertImage() {
       elements.emptyState.classList.add('is-hidden');
       elements.asciiArt.classList.remove('is-hidden');
       elements.copy.disabled = false;
-      elements.download.disabled = false;
+      elements.downloadTxt.disabled = false;
+      elements.downloadPng.disabled = false;
       showToast(t('converted'));
     } catch (error) {
       console.error(error);
@@ -504,19 +572,92 @@ async function copyOutput() {
   }
 }
 
-function downloadOutput() {
+function triggerDownload(url, filename) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function downloadTxt() {
   if (!state.output) return;
 
   const blob = new Blob([state.output], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'aa.txt';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  triggerDownload(url, 'aa.txt');
   setTimeout(() => URL.revokeObjectURL(url), 0);
-  showToast(t('downloaded'));
+  showToast(t('txtDownloaded'));
+}
+
+async function downloadPng() {
+  if (!state.output) return;
+
+  try {
+    if (document.fonts?.ready) await document.fonts.ready;
+
+    const lines = state.output.replace(/\n$/, '').split('\n');
+    const fontSize = 7;
+    const lineHeight = fontSize * 0.78;
+    const padding = 22;
+    const fontFamily = 'SFMono-Regular, Cascadia Code, Consolas, Liberation Mono, Menlo, monospace';
+
+    const measureCanvas = document.createElement('canvas');
+    const measureContext = measureCanvas.getContext('2d');
+    if (!measureContext) throw new Error('Canvas is unavailable.');
+    measureContext.font = `${fontSize}px ${fontFamily}`;
+
+    let textWidth = 0;
+    for (const line of lines) {
+      textWidth = Math.max(textWidth, measureContext.measureText(line).width);
+    }
+
+    const cssWidth = Math.max(1, Math.ceil(textWidth + padding * 2));
+    const cssHeight = Math.max(1, Math.ceil(lines.length * lineHeight + padding * 2));
+    const maxCanvasSide = 16384;
+    const maxCanvasArea = 64_000_000;
+
+    if (cssWidth > maxCanvasSide || cssHeight > maxCanvasSide || cssWidth * cssHeight > maxCanvasArea) {
+      throw new Error('PNG canvas is too large.');
+    }
+
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = cssWidth;
+    exportCanvas.height = cssHeight;
+
+    const exportContext = exportCanvas.getContext('2d');
+    if (!exportContext) throw new Error('Canvas is unavailable.');
+
+    const exportColors = state.theme === 'light'
+      ? { background: '#ffffff', foreground: '#111318' }
+      : { background: '#0d0f12', foreground: '#e7ebef' };
+
+    exportContext.fillStyle = exportColors.background;
+    exportContext.fillRect(0, 0, cssWidth, cssHeight);
+    exportContext.fillStyle = exportColors.foreground;
+    exportContext.font = `${fontSize}px ${fontFamily}`;
+    exportContext.textBaseline = 'top';
+
+    lines.forEach((line, index) => {
+      exportContext.fillText(line, padding, padding + index * lineHeight);
+    });
+
+    const blob = await new Promise((resolve, reject) => {
+      exportCanvas.toBlob((result) => {
+        if (result) resolve(result);
+        else reject(new Error('PNG encoding failed.'));
+      }, 'image/png');
+    });
+
+    const url = URL.createObjectURL(blob);
+    triggerDownload(url, 'aa.png');
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    showToast(t('pngDownloaded'));
+  } catch (error) {
+    console.error(error);
+    showToast(t('pngFailed'), 'error');
+  }
 }
 
 function handleDrop(event) {
@@ -525,14 +666,30 @@ function handleDrop(event) {
   loadImageFile(event.dataTransfer?.files?.[0]);
 }
 
-function initializeLanguage() {
-  const stored = getStoredLanguage();
-  setLanguageMode(['auto', 'en', 'ja'].includes(stored) ? stored : 'auto', { persist: false });
+function initializePreferences() {
+  const storedLanguage = getStoredLanguage();
+  const storedTheme = getStoredTheme();
+
+  setLanguageMode(
+    ['auto', 'en', 'ja'].includes(storedLanguage) ? storedLanguage : 'auto',
+    { persist: false }
+  );
+
+  setThemeMode(
+    ['auto', 'dark', 'light'].includes(storedTheme) ? storedTheme : 'auto',
+    { persist: false }
+  );
 }
 
 languageButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setLanguageMode(button.dataset.language);
+  });
+});
+
+themeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setThemeMode(button.dataset.themeMode);
   });
 });
 
@@ -571,7 +728,8 @@ elements.width.addEventListener('input', syncAspectHeight);
 elements.convert.addEventListener('click', convertImage);
 elements.clear.addEventListener('click', clearImage);
 elements.copy.addEventListener('click', copyOutput);
-elements.download.addEventListener('click', downloadOutput);
+elements.downloadTxt.addEventListener('click', downloadTxt);
+elements.downloadPng.addEventListener('click', downloadPng);
 
 window.addEventListener('languagechange', () => {
   if (state.languageMode === 'auto') {
@@ -580,6 +738,14 @@ window.addEventListener('languagechange', () => {
   }
 });
 
+const systemThemeQuery = window.matchMedia?.('(prefers-color-scheme: light)');
+systemThemeQuery?.addEventListener?.('change', () => {
+  if (state.themeMode === 'auto') {
+    state.theme = resolveTheme('auto');
+    renderTheme();
+  }
+});
+
 window.addEventListener('beforeunload', revokeImageUrl);
 
-initializeLanguage();
+initializePreferences();
